@@ -20,29 +20,107 @@ datasets = {
     'bulk_transcripts': adata_bulk_transcripts
 }
 
+# ============================================================
+# 1. BASIC DATASET INFORMATION
+# ============================================================
 
-# 1. How many multi-isoform genes?
-print(f"Multi-isoform genes: {len(ad.uns['multi_isoform_genes'])}")
-print(f"Total genes: {len(ad.uns['gene_n_transcripts'])}")
+def explore_anndata(name, adata):
+    """Comprehensive exploration of AnnData object"""
+    print(f"\n{'='*60}")
+    print(f"Dataset: {name}")
+    print(f"{'='*60}\n")
+    
+    # Basic shape
+    print(f"Shape: {adata.shape[0]} cells × {adata.shape[1]} features")
+    print(f"  - n_obs (cells): {adata.n_obs}")
+    print(f"  - n_vars (genes/transcripts): {adata.n_vars}")
+    
+    # Data matrix type
+    print(f"\nData Matrix (X):")
+    print(f"  - Type: {type(adata.X)}")
+    print(f"  - Dtype: {adata.X.dtype}")
+    print(f"  - Memory: {adata.X.data.nbytes / 1e9:.2f} GB" if hasattr(adata.X, 'data') else f"  - Memory: {adata.X.nbytes / 1e9:.2f} GB")
+    print(f"  - Sparse: {type(adata.X).__name__ == 'csr_matrix' or type(adata.X).__name__ == 'csc_matrix'}")
+    
+    # Available annotations
+    print(f"\nCell metadata (obs): {list(adata.obs.columns)}")
+    print(f"Gene/Transcript metadata (var): {list(adata.var.columns)}")
+    print(f"Layers: {list(adata.layers.keys()) if adata.layers else 'None'}")
+    print(f"Obs metadata (obsm): {list(adata.obsm.keys()) if adata.obsm else 'None'}")
+    print(f"Var metadata (varm): {list(adata.varm.keys()) if adata.varm else 'None'}")
+    print(f"Unstructured annotations (uns): {list(adata.uns.keys()) if adata.uns else 'None'}")
+    
+    # Statistical summary
+    print(f"\nExpression Statistics:")
+    if hasattr(adata.X, 'toarray'):
+        X_dense = adata.X.toarray()
+    else:
+        X_dense = adata.X
+    
+    print(f"  - Min: {X_dense.min():.2f}")
+    print(f"  - Max: {X_dense.max():.2f}")
+    print(f"  - Mean: {X_dense.mean():.2f}")
+    print(f"  - Median: {np.median(X_dense):.2f}")
+    print(f"  - Sparsity (% zeros): {(X_dense == 0).sum() / X_dense.size * 100:.2f}%")
+    
+    # Per-cell statistics
+    cell_counts = X_dense.sum(axis=1)
+    print(f"\nPer-Cell Counts (Library Size):")
+    print(f"  - Min: {cell_counts.min():.0f}")
+    print(f"  - Max: {cell_counts.max():.0f}")
+    print(f"  - Mean: {cell_counts.mean():.0f}")
+    print(f"  - Median: {np.median(cell_counts):.0f}")
+    
+    # Per-gene/transcript statistics
+    feature_counts = X_dense.sum(axis=0)
+    print(f"\nPer-Feature Total Counts:")
+    print(f"  - Min: {feature_counts.min():.0f}")
+    print(f"  - Max: {feature_counts.max():.0f}")
+    print(f"  - Mean: {feature_counts.mean():.0f}")
+    print(f"  - Features with 0 counts: {(feature_counts == 0).sum()}")
+    
+    # Cell type distribution (if available)
+    if 'cell_type' in adata.obs.columns:
+        print(f"\nCell Type Distribution:")
+        cell_type_counts = adata.obs['cell_type'].value_counts()
+        for ct, count in cell_type_counts.items():
+            print(f"  - {ct}: {count} ({count/len(adata.obs)*100:.1f}%)")
+    
+    # Check for batch effects
+    if 'batch' in adata.obs.columns:
+        print(f"\nBatch Distribution:")
+        batch_counts = adata.obs['batch'].value_counts()
+        for batch, count in batch_counts.items():
+            print(f"  - {batch}: {count}")
+    
+    return adata
 
-# 2. Is data raw counts?
-if hasattr(ad.X, 'toarray'):
-    X_sample = ad.X[:100, :100].toarray()
-else:
-    X_sample = ad.X[:100, :100]
-print(f"Is integer data: {np.allclose(X_sample, X_sample.astype(int))}")
+# Run exploration for all datasets
+for name, adata in datasets.items():
+    explore_anndata(name, adata)
 
-# 3. How many cell clusters?
-print(f"Number of clusters: {ad.obs['leiden'].nunique()}")
+# # 1. How many multi-isoform genes?
+# print(f"Multi-isoform genes: {len(ad.uns['multi_isoform_genes'])}")
+# print(f"Total genes: {len(ad.uns['gene_n_transcripts'])}")
 
-# 4. Data size
-print(f"Shape: {ad.shape[0]} cells × {ad.shape[1]} isoforms")
+# # 2. Is data raw counts?
+# if hasattr(ad.X, 'toarray'):
+#     X_sample = ad.X[:100, :100].toarray()
+# else:
+#     X_sample = ad.X[:100, :100]
+# print(f"Is integer data: {np.allclose(X_sample, X_sample.astype(int))}")
 
-# 5. Sparsity
-if hasattr(ad.X, 'toarray'):
-    sparsity = (ad.X.toarray() == 0).mean() * 100
-else:
-    sparsity = (ad.X == 0).mean() * 100
-print(f"Sparsity: {sparsity:.1f}%")
+# # 3. How many cell clusters?
+# print(f"Number of clusters: {ad.obs['leiden'].nunique()}")
+
+# # 4. Data size
+# print(f"Shape: {ad.shape[0]} cells × {ad.shape[1]} isoforms")
+
+# # 5. Sparsity
+# if hasattr(ad.X, 'toarray'):
+#     sparsity = (ad.X.toarray() == 0).mean() * 100
+# else:
+#     sparsity = (ad.X == 0).mean() * 100
+# print(f"Sparsity: {sparsity:.1f}%")
 
 
