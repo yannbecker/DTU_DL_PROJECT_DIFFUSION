@@ -1,3 +1,5 @@
+import os 
+
 from src.normalize import normalize_bulk_data
 import anndata as ad
 from scimilarity.utils import load_annotation_model
