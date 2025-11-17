@@ -31,7 +31,7 @@ def explore_anndata(name, adata):
     print(f"{'='*60}\n")
     
     # Basic shape
-    print(f"Shape: {adata.shape[0]} cells × {adata.shape[1]} features")
+    print(f"Shape: {adata.shape[0]} cells/genes × {adata.shape[1]} features")
     print(f"  - n_obs (cells): {adata.n_obs}")
     print(f"  - n_vars (genes/transcripts): {adata.n_vars}")
     
