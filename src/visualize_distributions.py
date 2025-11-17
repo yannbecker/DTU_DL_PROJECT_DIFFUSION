@@ -31,40 +31,6 @@ def visualize_data_distributions(adata_genes, adata_transcripts, output_dir='./p
     plt.savefig(f'{output_dir}/library_size_distributions.png', dpi=300)
     plt.close()
     
-    # 2. Expression distribution before/after log1p
-    fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-    
-    # Raw counts
-    raw_genes = adata_genes.layers['counts'].data if sparse.issparse(adata_genes.layers['counts']) else adata_genes.layers['counts'].flatten()
-    raw_transcripts = adata_transcripts.layers['counts'].data if sparse.issparse(adata_transcripts.layers['counts']) else adata_transcripts.layers['counts'].flatten()
-    
-    axes[0, 0].hist(np.log10(raw_genes[raw_genes > 0] + 1), bins=100, edgecolor='black', alpha=0.7)
-    axes[0, 0].set_xlabel('log10(Raw Count + 1)')
-    axes[0, 0].set_ylabel('Frequency')
-    axes[0, 0].set_title('Gene Raw Count Distribution')
-    
-    axes[0, 1].hist(np.log10(raw_transcripts[raw_transcripts > 0] + 1), bins=100, edgecolor='black', alpha=0.7)
-    axes[0, 1].set_xlabel('log10(Raw Count + 1)')
-    axes[0, 1].set_ylabel('Frequency')
-    axes[0, 1].set_title('Transcript Raw Count Distribution')
-    
-    # Log1p normalized
-    log_genes = adata_genes.layers['log1p'].data if sparse.issparse(adata_genes.layers['log1p']) else adata_genes.layers['log1p'].flatten()
-    log_transcripts = adata_transcripts.layers['log1p'].data if sparse.issparse(adata_transcripts.layers['log1p']) else adata_transcripts.layers['log1p'].flatten()
-    
-    axes[1, 0].hist(log_genes[log_genes > 0], bins=100, edgecolor='black', alpha=0.7)
-    axes[1, 0].set_xlabel('log1p Normalized Expression')
-    axes[1, 0].set_ylabel('Frequency')
-    axes[1, 0].set_title('Gene log1p Distribution')
-    
-    axes[1, 1].hist(log_transcripts[log_transcripts > 0], bins=100, edgecolor='black', alpha=0.7)
-    axes[1, 1].set_xlabel('log1p Normalized Expression')
-    axes[1, 1].set_ylabel('Frequency')
-    axes[1, 1].set_title('Transcript log1p Distribution')
-    
-    plt.tight_layout()
-    plt.savefig(f'{output_dir}/expression_distributions.png', dpi=300)
-    plt.close()
     
     # 3. Sparsity analysis
     fig, axes = plt.subplots(1, 2, figsize=(12, 4))
