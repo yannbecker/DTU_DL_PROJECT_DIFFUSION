@@ -11,11 +11,7 @@ adata_bulk_genes = ad.read_h5ad('/work3/s193518/scIsoPred/data/bulk_processed_ge
 
 adata_bulk_genes.layers['counts'] = adata_bulk_genes.X.copy()
 
-
-adata_bulk_transcripts = normalize_bulk_data(adata_bulk_genes)
-
-# Align dataset to scimilarity's expected gene set
-adata_bulk_genes = align_dataset(adata_bulk_genes)
+adata_bulk_genes = normalize_bulk_data(adata_bulk_genes)
 
 # Initialize CellAnnotation with pretrained model
 # Download model from https://zenodo.org/records/10685499
