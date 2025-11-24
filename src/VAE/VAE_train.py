@@ -6,6 +6,7 @@ import scanpy as sc
 
 import numpy as np
 import torch
+from tqdm import tqdm
 from VAE_model import VAE
 import sys
 from pathlib import Path
@@ -84,9 +85,10 @@ def train_vae(args, return_model=False):
     args["hparams"] = autoencoder.hparams
 
     start_time = time.time()
-    for step in range(args["max_steps"]):
+    for step in tqdm(range(args["max_steps"])):
 
         genes, _ = next(datasets)
+        genes = torch.tensor(genes, dtype=torch.float32, device=autoencoder.device)
 
         minibatch_training_stats = autoencoder.train_step(genes)
 
