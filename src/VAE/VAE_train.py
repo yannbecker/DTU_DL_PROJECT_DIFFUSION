@@ -33,6 +33,7 @@ def prepare_vae(args, state_dict=None):
         train_vae=True,
         use_pca=True,          
         pca_dim=args["num_genes"],  # num_genes now means PCA dim
+        plot_pca=args["plot_pca"]
     )
 
     print('data loaded from ', args["data_dir"])
@@ -52,7 +53,7 @@ def prepare_vae(args, state_dict=None):
         autoencoder.decoder.load_state(state_dict["decoder"], use_gpu)
 
     print('autoencoder prepared')
-    
+
     return autoencoder, datasets
 
 def train_vae(args, return_model=False):
@@ -123,6 +124,7 @@ def parse_arguments():
     parser.add_argument("--data_dir", type=str, default='/work3/s193518/scIsoPred/data/bulk_processed_transcript.h5ad')
     parser.add_argument("--loss_ae", type=str, default="mse")
     parser.add_argument("--decoder_activation", type=str, default="ReLU")
+    parser.add_argument("--plot_pca", type=bool, default=True)
 
     # AE arguments                                             
     parser.add_argument("--local_rank", type=int, default=0)  

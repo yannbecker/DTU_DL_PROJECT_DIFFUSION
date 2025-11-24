@@ -47,6 +47,7 @@ def load_data(
     hidden_dim=128,
     use_pca=False,
     pca_dim=1024, 
+    plot_pca=True
 ):
     """
     For a dataset, create a generator over (cells, kwargs) pairs.
@@ -75,7 +76,7 @@ def load_data(
     cell_data = adata.X.toarray()
 
     if use_pca:
-        cell_data, pca_model = run_pca(adata, n_components=pca_dim, plot=False)
+        cell_data, pca_model = run_pca(adata, n_components=pca_dim, plot=plot_pca)
     
     # turn data into VAE latent if not training the VAE itself
     if not train_vae:
