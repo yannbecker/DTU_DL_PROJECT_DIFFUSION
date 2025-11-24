@@ -3,6 +3,7 @@ from pathlib import Path
 
 # === CONFIGURATION ===
 url = "https://zenodo.org/record/8286452/files/annotation_model_v1.tar.gz?download=1"
+
 output_path = Path("annotation_model_v1.tar.gz")  # fichier local
 
 chunk_size = 1024 * 1024  # 1 MB par chunk

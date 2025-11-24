@@ -142,18 +142,18 @@ def parse_arguments():
     parser.add_argument("--max_minutes", type=int, default=3000)
     parser.add_argument("--checkpoint_freq", type=int, default=50000)
     parser.add_argument("--batch_size", type=int, default=128)
-    parser.add_argument("--state_dict", type=str, default="/data1/lep/Workspace/guided-diffusion/scimilarity-main/models/annotation_model_v1")  # if pretrain
+    parser.add_argument("--state_dict", type=str, default="./src/VAE/annotation_model_v1.tar.gz")  # if pretrain
     # parser.add_argument("--state_dict", type=str, default=None)   # if not pretrain
 
-    parser.add_argument("--save_dir", type=str, default='../output/ae_checkpoint/vae_bulk_transcript_pca/')
+    parser.add_argument("--save_dir", type=str, default='./output/ae_checkpoint/vae_bulk_transcript_pca/')
     parser.add_argument("--sweep_seeds", type=int, default=200)
     return dict(vars(parser.parse_args()))
 
 
 if __name__ == "__main__":
     seed_everything(1234)
-    args = parse_arguments()
-    autoencoder, datasets = prepare_vae(args)
-    print('data loaded from ', args["data_dir"])
-    print('PCA resulting data shape: ', datasets[0][0].shape)
+    # args = parse_arguments()
+    # autoencoder, datasets = prepare_vae(args)
+    # print('data loaded from ', args["data_dir"])
+    # print('PCA resulting data shape: ', datasets[0][0].shape)
     train_vae(parse_arguments())
