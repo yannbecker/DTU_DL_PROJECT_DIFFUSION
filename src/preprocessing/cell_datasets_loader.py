@@ -2,7 +2,6 @@ import math
 import random
 
 from PIL import Image
-import blobfile as bf
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
 
