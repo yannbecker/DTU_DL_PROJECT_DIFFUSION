@@ -8,8 +8,7 @@ __pycache__/
 
 # Data directory
 data/
-annotation_model_v1.tar.gz
-
+*.tar.gz
 # Distribution / packaging
 .Python
 build/
