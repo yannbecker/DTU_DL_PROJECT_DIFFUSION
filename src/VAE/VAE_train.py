@@ -6,7 +6,8 @@ import numpy as np
 import torch
 from VAE_model import VAE
 import sys
-sys.path.append('~')
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 from src.preprocessing.cell_datasets_loader import load_data
 
 torch.autograd.set_detect_anomaly(True)
