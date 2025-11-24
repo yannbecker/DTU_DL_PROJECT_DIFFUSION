@@ -149,7 +149,7 @@ def parse_arguments():
 if __name__ == "__main__":
     seed_everything(1234)
     args = parse_arguments()
-    autoencoder, datasets = prepare_vae(parse_arguments(), return_model=False)
+    autoencoder, datasets = prepare_vae(args)
     print('data loaded from ', args["data_dir"])
     print('PCA resulting data shape: ', datasets[0][0].shape)
     train_vae(parse_arguments())
