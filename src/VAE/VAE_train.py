@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 from src.preprocessing.cell_datasets_loader import load_data
+from src.preprocessing.PCA import run_pca
 
 torch.autograd.set_detect_anomaly(True)
 import random
@@ -149,6 +150,19 @@ def parse_arguments():
 if __name__ == "__main__":
     seed_everything(1234)
     args = parse_arguments()
+    if args["num_genes"] is None:
+        print("num_genes not provided, automatically detecting via PCA threshold ...")
+        adata = sc.read_h5ad(args["data_dir"])
+        
+        # Run PCA with n_components large enough to capture all variance
+        # but do not plot here to save time
+        X_pca, pca = run_pca(adata, n_components=None, threshold=0.90, plot=False)
+        
+        # Number of components chosen by run_pca to reach threshold variance
+        num_components = X_pca.shape[1]
+        args["num_genes"] = num_components
+        
+        print(f"Automatically set num_genes to {num_components} based on 90% variance threshold.")
     autoencoder, datasets = prepare_vae(args)
     print('data loaded from ', args["data_dir"])
     print('PCA resulting data shape: ', datasets[0][0].shape)
