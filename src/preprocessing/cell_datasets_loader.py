@@ -66,7 +66,7 @@ def load_data(
     if not data_dir:
         raise ValueError("unspecified data directory")
 
-    adata = sc.read_h5ad(data_dir)
+    adata = ad.read_h5ad(data_dir)
 
     classes = adata.obs['celltype'].values
     label_encoder = LabelEncoder()

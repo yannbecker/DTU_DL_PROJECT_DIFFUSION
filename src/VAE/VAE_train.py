@@ -123,7 +123,7 @@ def parse_arguments():
 
     parser = argparse.ArgumentParser(description="Finetune Scimilarity")
     # dataset arguments
-    parser.add_argument("--data_dir", type=str, default='/work3/s193518/scIsoPred/data/bulk_processed_transcript.h5ad')
+    parser.add_argument("--data_dir", type=str, default='/work3/s193518/scIsoPred/data/bulk_processed_transcripts.h5ad')
     parser.add_argument("--loss_ae", type=str, default="mse")
     parser.add_argument("--decoder_activation", type=str, default="ReLU")
     parser.add_argument("--plot_pca", type=bool, default=True)
