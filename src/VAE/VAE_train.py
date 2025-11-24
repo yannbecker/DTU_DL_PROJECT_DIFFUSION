@@ -39,8 +39,8 @@ def prepare_vae(args, state_dict=None):
         pca_dim=args["num_genes"],  # num_genes now means PCA dim
         plot_pca=args["plot_pca"]
     )
-
-    args["num_genes"] = datasets[0][0].shape[1]  # update num_genes to PCA dim
+    if args["use_pca"]:
+        args["num_genes"] = datasets[0][0].shape[1]  # update num_genes to PCA dim
 
     autoencoder = VAE(
         num_genes=args["num_genes"],
