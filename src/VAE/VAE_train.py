@@ -130,7 +130,7 @@ def parse_arguments():
     # AE arguments                                             
     parser.add_argument("--local_rank", type=int, default=0)  
     parser.add_argument("--split_seed", type=int, default=1234)
-    parser.add_argument("--num_genes", type=int, default=18996)
+    parser.add_argument("--num_genes", type=int, default=None) # if use PCA, num_genes means PCA dim
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--hparams", type=str, default="")
 

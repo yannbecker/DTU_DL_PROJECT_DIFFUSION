@@ -1,6 +1,8 @@
 import math
 import random
 
+import anndata as ad
+
 from PIL import Image
 import numpy as np
 from torch.utils.data import DataLoader, Dataset
@@ -45,8 +47,8 @@ def load_data(
     deterministic=False,
     train_vae=False,
     hidden_dim=128,
-    use_pca=False,
-    pca_dim=1024, 
+    use_pca=True,
+    pca_dim=None, 
     plot_pca=True,
     plot_path='output/plots/pca_variance.png',
     save_pca_path='output/data/pca_reduced_data.h5ad'
