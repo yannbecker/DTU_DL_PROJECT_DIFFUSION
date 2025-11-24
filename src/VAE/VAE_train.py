@@ -2,6 +2,7 @@ import argparse
 import os
 import re
 import time
+import scanpy as sc
 
 import numpy as np
 import torch
