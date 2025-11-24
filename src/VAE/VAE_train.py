@@ -1,5 +1,6 @@
 import argparse
 import os
+import re
 import time
 
 import numpy as np
@@ -36,8 +37,6 @@ def prepare_vae(args, state_dict=None):
         pca_dim=args["num_genes"],  # num_genes now means PCA dim
         plot_pca=args["plot_pca"]
     )
-
-    print('data loaded from ', args["data_dir"])
 
     autoencoder = VAE(
         num_genes=args["num_genes"],
@@ -149,4 +148,8 @@ def parse_arguments():
 
 if __name__ == "__main__":
     seed_everything(1234)
+    args = parse_arguments()
+    autoencoder, datasets = prepare_vae(parse_arguments(), return_model=False)
+    print('data loaded from ', args["data_dir"])
+    print('PCA resulting data shape: ', datasets[0][0].shape)
     train_vae(parse_arguments())
