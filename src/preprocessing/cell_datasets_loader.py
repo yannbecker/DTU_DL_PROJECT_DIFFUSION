@@ -9,7 +9,8 @@ from torch.utils.data import DataLoader, Dataset
 import scanpy as sc
 import torch
 import sys
-sys.path.append('~')
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 from src.VAE.VAE_model import VAE
 from src.preprocessing.PCA import run_pca
 from sklearn.preprocessing import LabelEncoder
