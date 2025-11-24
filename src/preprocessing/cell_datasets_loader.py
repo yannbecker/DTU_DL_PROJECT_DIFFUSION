@@ -11,6 +11,7 @@ import torch
 import sys
 sys.path.append('..')
 from src.VAE.VAE_model import VAE
+from src.preprocessing.PCA import run_pca
 from sklearn.preprocessing import LabelEncoder
 
 def stabilize(expression_matrix):
@@ -44,6 +45,8 @@ def load_data(
     deterministic=False,
     train_vae=False,
     hidden_dim=128,
+    use_pca=False,
+    pca_dim=1024, 
 ):
     """
     For a dataset, create a generator over (cells, kwargs) pairs.
@@ -59,15 +62,6 @@ def load_data(
         raise ValueError("unspecified data directory")
 
     adata = sc.read_h5ad(data_dir)
-    
-    # preporcess the data. modify this part if use your own dataset. the gene expression must first norm1e4 then log1p
-    sc.pp.filter_genes(adata, min_cells=3)
-    sc.pp.filter_cells(adata, min_genes=10)
-    adata.var_names_make_unique()
-
-    # if generate ood data, left this as the ood data
-    # selected_cells = (adata.obs['organ'] != 'mammary') | (adata.obs['celltype'] != 'B cell')  
-    # adata = adata[selected_cells, :]  
 
     classes = adata.obs['celltype'].values
     label_encoder = LabelEncoder()
@@ -80,12 +74,20 @@ def load_data(
 
     cell_data = adata.X.toarray()
 
-    # turn the gene expression into latent space. use this if training the diffusion backbone.
+    if use_pca:
+        cell_data, pca_model = run_pca(adata, n_components=pca_dim, plot=False)
+    
+    # turn data into VAE latent if not training the VAE itself
     if not train_vae:
-        num_gene = cell_data.shape[1]
-        autoencoder = load_VAE(vae_path,num_gene,hidden_dim)
-        cell_data = autoencoder(torch.tensor(cell_data).cuda(),return_latent=True)
-        cell_data = cell_data.cpu().detach().numpy()
+        num_gene = cell_data.shape[1]   # now this is pca_dim
+        autoencoder = load_VAE(vae_path, num_gene, hidden_dim)
+        autoencoder.eval()
+        with torch.no_grad():
+            cell_data = autoencoder(
+                torch.tensor(cell_data).cuda(),
+                return_latent=True,
+            )
+            cell_data = cell_data.cpu().detach().numpy()
     
     dataset = CellDataset(
         cell_data,

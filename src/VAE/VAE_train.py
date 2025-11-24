@@ -7,10 +7,6 @@ import torch
 from VAE_model import VAE
 import sys
 sys.path.append("..")
-# from guided_diffusion.cell_datasets import load_data
-# from guided_diffusion.cell_datasets_sapiens import load_data
-# from guided_diffusion.cell_datasets_WOT import load_data
-# from guided_diffusion.cell_datasets_muris import load_data
 from src.preprocessing.cell_datasets_loader import load_data
 
 torch.autograd.set_detect_anomaly(True)
@@ -35,7 +31,11 @@ def prepare_vae(args, state_dict=None):
         data_dir=args["data_dir"],
         batch_size=args["batch_size"],
         train_vae=True,
+        use_pca=True,          
+        pca_dim=args["num_genes"],  # num_genes now means PCA dim
     )
+
+    print('data loaded from ', args["data_dir"])
 
     autoencoder = VAE(
         num_genes=args["num_genes"],
@@ -51,8 +51,9 @@ def prepare_vae(args, state_dict=None):
         autoencoder.encoder.load_state(state_dict["encoder"], use_gpu)
         autoencoder.decoder.load_state(state_dict["decoder"], use_gpu)
 
+    print('autoencoder prepared')
+    
     return autoencoder, datasets
-
 
 def train_vae(args, return_model=False):
     """
@@ -119,7 +120,7 @@ def parse_arguments():
 
     parser = argparse.ArgumentParser(description="Finetune Scimilarity")
     # dataset arguments
-    parser.add_argument("--data_dir", type=str, default='/data1/lep/Workspace/guided-diffusion/data/tabula_muris/all.h5ad')
+    parser.add_argument("--data_dir", type=str, default='/work3/s193518/scIsoPred/data/bulk_processed_transcript.h5ad')
     parser.add_argument("--loss_ae", type=str, default="mse")
     parser.add_argument("--decoder_activation", type=str, default="ReLU")
 
@@ -138,7 +139,7 @@ def parse_arguments():
     parser.add_argument("--state_dict", type=str, default="/data1/lep/Workspace/guided-diffusion/scimilarity-main/models/annotation_model_v1")  # if pretrain
     # parser.add_argument("--state_dict", type=str, default=None)   # if not pretrain
 
-    parser.add_argument("--save_dir", type=str, default='../output/ae_checkpoint/muris_AE')
+    parser.add_argument("--save_dir", type=str, default='../output/ae_checkpoint/vae_bulk_transcript_pca/')
     parser.add_argument("--sweep_seeds", type=int, default=200)
     return dict(vars(parser.parse_args()))
 
