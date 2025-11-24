@@ -35,7 +35,7 @@ def prepare_vae(args, state_dict=None):
         data_dir=args["data_dir"],
         batch_size=args["batch_size"],
         train_vae=True,
-        use_pca=True,          
+        use_pca=args["use_pca"],         
         pca_dim=args["num_genes"],  # num_genes now means PCA dim
         plot_pca=args["plot_pca"]
     )
@@ -128,12 +128,13 @@ def parse_arguments():
     parser.add_argument("--data_dir", type=str, default='/work3/s193518/scIsoPred/data/bulk_processed_transcripts.h5ad')
     parser.add_argument("--loss_ae", type=str, default="mse")
     parser.add_argument("--decoder_activation", type=str, default="ReLU")
+    parser.add_argument("--use_pca", type=bool, default=False)
     parser.add_argument("--plot_pca", type=bool, default=True)
 
     # AE arguments                                             
     parser.add_argument("--local_rank", type=int, default=0)  
     parser.add_argument("--split_seed", type=int, default=1234)
-    parser.add_argument("--num_genes", type=int, default=None) # if use PCA, num_genes means PCA dim, VAE latent dim
+    parser.add_argument("--num_genes", type=int, default=162009) # if use PCA, num_genes means PCA dim, VAE latent dim
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--hparams", type=str, default="")
 
