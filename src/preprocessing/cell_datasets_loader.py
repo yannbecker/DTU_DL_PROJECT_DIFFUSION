@@ -68,12 +68,6 @@ def load_data(
 
     adata = ad.read_h5ad(data_dir)
 
-    classes = adata.obs['celltype'].values
-    label_encoder = LabelEncoder()
-    labels = classes
-    label_encoder.fit(labels)
-    classes = label_encoder.transform(labels)
-    print(f"Found {len(label_encoder.classes_)} unique cell types.")
     sc.pp.normalize_total(adata, target_sum=1e4)
     sc.pp.log1p(adata)
     print("Data normalized and log-transformed.")
@@ -109,8 +103,7 @@ def load_data(
             cell_data = cell_data.cpu().detach().numpy()
     
     dataset = CellDataset(
-        cell_data,
-        classes
+        cell_data
     )
     if deterministic:
         loader = DataLoader(
@@ -128,7 +121,7 @@ class CellDataset(Dataset):
     def __init__(
         self,
         cell_data,
-        class_name
+        class_name=None,
     ):
         super().__init__()
         self.data = cell_data
