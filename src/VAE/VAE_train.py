@@ -40,6 +40,8 @@ def prepare_vae(args, state_dict=None):
         plot_pca=args["plot_pca"]
     )
 
+    args["num_genes"] = datasets[0][0].shape[1]  # update num_genes to PCA dim
+
     autoencoder = VAE(
         num_genes=args["num_genes"],
         device=device,
@@ -131,7 +133,7 @@ def parse_arguments():
     # AE arguments                                             
     parser.add_argument("--local_rank", type=int, default=0)  
     parser.add_argument("--split_seed", type=int, default=1234)
-    parser.add_argument("--num_genes", type=int, default=None) # if use PCA, num_genes means PCA dim
+    parser.add_argument("--num_genes", type=int, default=None) # if use PCA, num_genes means PCA dim, VAE latent dim
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--hparams", type=str, default="")
 
@@ -151,19 +153,6 @@ def parse_arguments():
 if __name__ == "__main__":
     seed_everything(1234)
     args = parse_arguments()
-    if args["num_genes"] is None:
-        print("num_genes not provided, automatically detecting via PCA threshold ...")
-        adata = sc.read_h5ad(args["data_dir"])
-        
-        # Run PCA with n_components large enough to capture all variance
-        # but do not plot here to save time
-        X_pca, pca = run_pca(adata, n_components=None, threshold=0.90, plot=False)
-        
-        # Number of components chosen by run_pca to reach threshold variance
-        num_components = X_pca.shape[1]
-        args["num_genes"] = num_components
-        
-        print(f"Automatically set num_genes to {num_components} based on 90% variance threshold.")
     autoencoder, datasets = prepare_vae(args)
     print('data loaded from ', args["data_dir"])
     print('PCA resulting data shape: ', datasets[0][0].shape)
