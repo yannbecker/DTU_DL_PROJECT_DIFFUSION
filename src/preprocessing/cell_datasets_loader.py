@@ -47,7 +47,9 @@ def load_data(
     hidden_dim=128,
     use_pca=False,
     pca_dim=1024, 
-    plot_pca=True
+    plot_pca=True,
+    plot_path='output/plots/pca_variance.png',
+    save_pca_path='output/data/pca_reduced_data.h5ad'
 ):
     """
     For a dataset, create a generator over (cells, kwargs) pairs.
@@ -69,15 +71,29 @@ def load_data(
     labels = classes
     label_encoder.fit(labels)
     classes = label_encoder.transform(labels)
-
+    print(f"Found {len(label_encoder.classes_)} unique cell types.")
     sc.pp.normalize_total(adata, target_sum=1e4)
     sc.pp.log1p(adata)
-
+    print("Data normalized and log-transformed.")
     cell_data = adata.X.toarray()
-
+    print(f"Original data shape: {cell_data.shape}")
     if use_pca:
-        cell_data, pca_model = run_pca(adata, n_components=pca_dim, plot=plot_pca)
-    
+        cell_data, pca_model = run_pca(adata, 
+                                        n_components=None, 
+                                        threshold=0.90, 
+                                        plot=True, 
+                                        plot_path=plot_path)
+        print(f"PCA reduced data shape: {cell_data.shape}")
+        print(f"PCA model components shape: {pca_model.components_.shape}")
+        if save_pca_path is not None:
+            # Create AnnData with PCA data and original metadata
+            adata_pca = ad.AnnData(X=cell_data, obs=adata.obs.copy())
+            # Optionally copy var metadata or create dummy var for PCs
+            adata_pca.var['PCs'] = [f'PC{i+1}' for i in range(cell_data.shape[1])]
+
+            adata_pca.write_h5ad(save_pca_path)
+            print(f"Saved PCA-reduced data to {save_pca_path}")
+
     # turn data into VAE latent if not training the VAE itself
     if not train_vae:
         num_gene = cell_data.shape[1]   # now this is pca_dim
