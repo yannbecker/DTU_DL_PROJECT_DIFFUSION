@@ -5,7 +5,8 @@ import anndata as ad
 from scimilarity import CellAnnotation
 from scimilarity.utils import lognorm_counts, align_dataset
 import sys
-sys.path.append('~')
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 from src.preprocessing.cell_datasets_loader import load_data
 
 data_path = '/work3/s193518/scIsoPred/data/bulk_processed_transcript.h5ad'
