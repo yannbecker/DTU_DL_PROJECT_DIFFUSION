@@ -2,16 +2,18 @@ import os
 import numpy as np
 import scanpy as sc
 import anndata as ad
-from src.normalize import normalize_bulk_data
 from scimilarity import CellAnnotation
 from scimilarity.utils import lognorm_counts, align_dataset
 
+
+from src.preprocessing.normalize import normalize_bulk_data
 
 adata_bulk_genes = ad.read_h5ad('/work3/s193518/scIsoPred/data/bulk_processed_genes.h5ad')
 
 adata_bulk_genes.layers['counts'] = adata_bulk_genes.X.copy()
 
 adata_bulk_genes = normalize_bulk_data(adata_bulk_genes)
+
 
 # Initialize CellAnnotation with pretrained model
 # Download model from https://zenodo.org/records/10685499
