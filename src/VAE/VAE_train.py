@@ -141,8 +141,8 @@ def parse_arguments():
     parser.add_argument("--hparams", type=str, default="")
 
     # training arguments
-    parser.add_argument("--max_steps", type=int, default=200000)
-    parser.add_argument("--max_minutes", type=int, default=3000)
+    parser.add_argument("--max_steps", type=int, default=2000)
+    parser.add_argument("--max_minutes", type=int, default=300)
     parser.add_argument("--checkpoint_freq", type=int, default=50000)
     parser.add_argument("--batch_size", type=int, default=128)
     parser.add_argument("--state_dict", type=str, default="./src/VAE/annotation_model_v1")  # if pretrain
