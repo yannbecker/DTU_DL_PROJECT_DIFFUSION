@@ -46,7 +46,7 @@ def load_data(
     plot_pca=True,
     plot_path='output/plots/pca_variance.png',
     save_pca_path='output/data/pca_reduced_data.h5ad',
-    condition_key=None,  # <--- NOUVEAU PARAMÈTRE
+    condition_key=None,  # NOUVEAU PARAMÈTRE
 ):
     """
     For a dataset, create a generator over (cells, kwargs) pairs.
@@ -174,7 +174,7 @@ if __name__ == "__main__":
     data = load_data(
         data_dir="/work3/s193518/scIsoPred/data/bulk_processed_transcripts.h5ad",
         batch_size=128,
-        vae_path='./output/ae_checkpoint/vae_bulk_transcript_pca/model_seed=0_step=1999.pt',
+        vae_path='../VAE/output/ae_checkpoint/vae_bulk_transcript_pca/model_seed=0_step=1999.pt',
         hidden_dim=128,
         train_vae=False,
         condition_key = "leiden",
