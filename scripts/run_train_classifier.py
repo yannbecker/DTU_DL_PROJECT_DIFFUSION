@@ -21,7 +21,7 @@ defaults = dict(
         latent_dim=128,
         model_path='output/classifier_checkpoint/classifier_muris',
         start_guide_time=500,
-        num_class=5, ########### /!\ à adapter aux
+        num_class=5, ########### /!\ à adapter à la condition key (leiden -> 5 classes)
     )
 
 ############################################ Chosen parameters ########################################################

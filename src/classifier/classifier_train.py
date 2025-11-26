@@ -226,7 +226,7 @@ def create_argparser():
         log_interval=20,
         eval_interval=20,
         save_interval=500,
-        vae_path='./output/ae_checkpoint/vae_bulk_transcript_pca/model_seed=0_step=1999.pt',
+        vae_path='/zhome/70/a/224464/DL_project17/DTU_DL_PROJECT_DIFFUSION/src/VAE/output/ae_checkpoint/vae_bulk_transcript_pca/model_seed=0_step=1999.pt',
         latent_dim=128,
         model_path='output/classifier_checkpoint/classifier_bulk_processed_transcripts',
         start_guide_time=500,
