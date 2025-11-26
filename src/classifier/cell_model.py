@@ -1,7 +1,14 @@
 import torch
 import torch.nn as nn
 
-from .nn import (
+import argparse
+import inspect
+
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+from src.utils.nn import (
     linear,
     timestep_embedding,
 )
