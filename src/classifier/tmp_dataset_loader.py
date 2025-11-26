@@ -62,7 +62,9 @@ def load_data(
     # 1. Gestion des Labels (Conditionning)
     labels = None
     num_classes = 0
+    print(f"Condition key: {condition_key}")
     if condition_key is not None:
+        print("Entering condition key related part")
         if condition_key in adata.obs.columns:
             print(f"Loading labels from adata.obs['{condition_key}']...")
             # Encodage des labels (str -> int)
