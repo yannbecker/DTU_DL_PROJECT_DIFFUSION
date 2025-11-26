@@ -173,6 +173,7 @@ class CellDataset(Dataset):
         return arr, out_dict
     
 if __name__ == "__main__":
+    print("Entering main ...")
     data = load_data(
         data_dir="/work3/s193518/scIsoPred/data/bulk_processed_transcripts.h5ad",
         batch_size=128,
@@ -181,3 +182,4 @@ if __name__ == "__main__":
         train_vae=False,
         condition_key = "leiden",
     )
+    print("Done loading data")
