@@ -82,7 +82,7 @@ def main():
     data = load_data(
         data_dir=args.data_dir,
         batch_size=args.batch_size,
-        vae_path=args.vae_path,
+        vae_path=args.vae_path,     
         hidden_dim=args.latent_dim,
         train_vae=False,
     )
