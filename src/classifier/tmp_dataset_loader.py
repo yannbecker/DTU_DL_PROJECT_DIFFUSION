@@ -177,7 +177,7 @@ if __name__ == "__main__":
     data_generator = load_data(
         data_dir="/work3/s193518/scIsoPred/data/bulk_processed_transcripts.h5ad",
         batch_size=128,
-        vae_path='../VAE/output/ae_checkpoint/vae_bulk_transcript_pca/model_seed=0_step=1999.pt',
+        vae_path='/zhome/70/a/224464/DL_project17/DTU_DL_PROJECT_DIFFUSION/src/VAE/output/ae_checkpoint/vae_bulk_transcript_pca/model_seed=0_step=1999.pt',
         hidden_dim=128,
         train_vae=False,
         condition_key = "leiden",
