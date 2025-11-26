@@ -118,7 +118,7 @@ def load_data(
         autoencoder.eval()
         
         # Passage par lot pour éviter OOM sur GPU si le dataset est énorme
-        batch_size_inference = 4096
+        batch_size_inference = 512
         latent_list = []
         
         with torch.no_grad():
