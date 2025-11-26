@@ -27,9 +27,9 @@ defaults = dict(
 ############################################ Chosen parameters ########################################################
 
 # Paths 
-model_path = defaults["model_path"]
-vae_path = defaults["vae_path"]
-data_dir = defaults["data_dir"]     
+model_path = defaults["model_path"] # MODIFY
+vae_path = "/zhome/f0/d/223076/Projet_Deep_Learning/DTU_DL_PROJECT_DIFFUSION/src/VAE/output/ae_checkpoint/vae_bulk_transcript_pca/model_seed=0_step=1999.pt"
+data_dir = defaults["data_dir"] # MODIFY
 val_data_dir = defaults["val_data_dir"]
 
 # Training parameters 
@@ -81,7 +81,7 @@ args = [
 ]
 
 
-############################################## Run classifier_train.py ###################################""
+######################################## Run classifier_train.py ###################################
 
 if __name__ == "__main__":
     subprocess.run(["python", "src.classifier.classifier_train.py"] + args, check=True)
