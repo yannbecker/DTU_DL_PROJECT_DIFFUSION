@@ -41,7 +41,7 @@ def load_data(
     deterministic=False,
     train_vae=False,
     hidden_dim=128,
-    use_pca=True,
+    use_pca=False,
     pca_dim=None, 
     plot_pca=True,
     plot_path='output/plots/pca_variance.png',
