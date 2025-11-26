@@ -85,6 +85,7 @@ def main():
         vae_path=args.vae_path,
         hidden_dim=args.latent_dim,
         train_vae=False,
+        condition_key = "leiden",
     )
     if args.val_data_dir:
         val_data = load_data(
@@ -211,10 +212,10 @@ def split_microbatches(microbatch, *args):
 
 def create_argparser():
     defaults = dict(
-        data_dir="/data1/lep/Workspace/guided-diffusion/data/tabula_muris/all.h5ad",
+        data_dir="/work3/s193518/scIsoPred/data/bulk_processed_transcripts.h5ad",
         val_data_dir="",
         noised=True,
-        iterations=500000,
+        iterations=1000,
         lr=3e-4,
         weight_decay=0.0,
         anneal_lr=False,
@@ -222,12 +223,12 @@ def create_argparser():
         microbatch=-1,
         schedule_sampler="uniform",
         resume_checkpoint="",
-        log_interval=100,
-        eval_interval=100,
-        save_interval=100000,
-        vae_path='output/Autoencoder_checkpoint/muris_AE/model_seed=0_step=0.pt',
+        log_interval=20,
+        eval_interval=20,
+        save_interval=500,
+        vae_path='./output/ae_checkpoint/vae_bulk_transcript_pca/model_seed=0_step=1999.pt',
         latent_dim=128,
-        model_path='output/classifier_checkpoint/classifier_muris',
+        model_path='output/classifier_checkpoint/classifier_bulk_processed_transcripts',
         start_guide_time=500,
         num_class=12,
     )
