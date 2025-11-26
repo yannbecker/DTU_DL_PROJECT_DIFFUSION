@@ -9,6 +9,7 @@ __pycache__/
 # Data directory
 data/
 *.tar.gz
+*.sh
 # Distribution / packaging
 .Python
 build/
