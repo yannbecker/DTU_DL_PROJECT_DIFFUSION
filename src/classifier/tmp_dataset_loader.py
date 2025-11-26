@@ -41,12 +41,12 @@ def load_data(
     deterministic=False,
     train_vae=False,
     hidden_dim=128,
-    use_pca=True,
+    use_pca=False,
     pca_dim=None, 
     plot_pca=True,
     plot_path='output/plots/pca_variance.png',
     save_pca_path='output/data/pca_reduced_data.h5ad',
-    condition_key=None,  # <--- NOUVEAU PARAMÈTRE
+    condition_key=None,  # NOUVEAU PARAMÈTRE
 ):
     """
     For a dataset, create a generator over (cells, kwargs) pairs.
@@ -62,7 +62,9 @@ def load_data(
     # 1. Gestion des Labels (Conditionning)
     labels = None
     num_classes = 0
+    print(f"Condition key: {condition_key}")
     if condition_key is not None:
+        print("Entering condition key related part")
         if condition_key in adata.obs.columns:
             print(f"Loading labels from adata.obs['{condition_key}']...")
             # Encodage des labels (str -> int)
@@ -171,11 +173,31 @@ class CellDataset(Dataset):
         return arr, out_dict
     
 if __name__ == "__main__":
-    data = load_data(
+    print("Entering main ...")
+    data_generator = load_data(
         data_dir="/work3/s193518/scIsoPred/data/bulk_processed_transcripts.h5ad",
         batch_size=128,
-        vae_path='./output/ae_checkpoint/vae_bulk_transcript_pca/model_seed=0_step=1999.pt',
+        vae_path='/zhome/70/a/224464/DL_project17/DTU_DL_PROJECT_DIFFUSION/src/VAE/output/ae_checkpoint/vae_bulk_transcript_pca/model_seed=0_step=1999.pt',
         hidden_dim=128,
         train_vae=False,
         condition_key = "leiden",
     )
+    print("Done loading data")
+
+    try:
+        batch_data, extra_dict = next(data_generator)
+        
+        print("-" * 30)
+        print("SUCCESS!")
+        print(f"Batch data shape: {batch_data.shape}")
+        
+        if "y" in extra_dict:
+            print(f"Labels shape: {extra_dict['y'].shape}")
+            print(f"Example labels: {extra_dict['y'][:5]}") # Affiche les 5 premiers labels
+        else:
+            print("No labels found in output dictionary.")
+            
+    except StopIteration:
+        print("The generator is empty!")
+    except Exception as e:
+        print(f"An error occurred: {e}")
