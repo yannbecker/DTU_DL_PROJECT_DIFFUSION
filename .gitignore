@@ -10,6 +10,12 @@ __pycache__/
 data/
 *.tar.gz
 *.sh
+output/
+
+# Job scheduler log
+*.out
+*.err
+
 # Distribution / packaging
 .Python
 build/
