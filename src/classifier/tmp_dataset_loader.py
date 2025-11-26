@@ -174,7 +174,7 @@ class CellDataset(Dataset):
     
 if __name__ == "__main__":
     print("Entering main ...")
-    data = load_data(
+    data_generator = load_data(
         data_dir="/work3/s193518/scIsoPred/data/bulk_processed_transcripts.h5ad",
         batch_size=128,
         vae_path='../VAE/output/ae_checkpoint/vae_bulk_transcript_pca/model_seed=0_step=1999.pt',
@@ -183,3 +183,21 @@ if __name__ == "__main__":
         condition_key = "leiden",
     )
     print("Done loading data")
+
+    try:
+        batch_data, extra_dict = next(data_generator)
+        
+        print("-" * 30)
+        print("SUCCESS!")
+        print(f"Batch data shape: {batch_data.shape}")
+        
+        if "y" in extra_dict:
+            print(f"Labels shape: {extra_dict['y'].shape}")
+            print(f"Example labels: {extra_dict['y'][:5]}") # Affiche les 5 premiers labels
+        else:
+            print("No labels found in output dictionary.")
+            
+    except StopIteration:
+        print("The generator is empty!")
+    except Exception as e:
+        print(f"An error occurred: {e}")
