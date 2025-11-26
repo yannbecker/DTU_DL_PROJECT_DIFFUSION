@@ -230,7 +230,7 @@ def create_argparser():
         latent_dim=128,
         model_path='output/classifier_checkpoint/classifier_bulk_processed_transcripts',
         start_guide_time=500,
-        num_class=12,
+        num_class=5, ########### /!\ à adapter à la condition key (leiden -> 5 classes)
     )
     num_class = defaults['num_class']
     defaults.update(classifier_and_diffusion_defaults())
