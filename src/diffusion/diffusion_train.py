@@ -4,16 +4,20 @@ Train a diffusion model on images.
 
 import argparse
 
-from utils import dist_util, logger
-from preprocessing.cell_datasets_loader import load_data
-from utils.resample import create_named_schedule_sampler
-from utils.script_util import (
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+from src.utils import dist_util, logger
+from src.preprocessing.cell_datasets_loader import load_data
+from src.utils.resample import create_named_schedule_sampler
+from src.utils.script_util import (
     model_and_diffusion_defaults,
     create_model_and_diffusion,
     args_to_dict,
     add_dict_to_argparser,
 )
-from utils.train_util import TrainLoop
+from src.utils.train_util import TrainLoop
 
 import torch
 import numpy as np
