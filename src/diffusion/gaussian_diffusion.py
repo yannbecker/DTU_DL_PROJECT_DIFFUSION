@@ -119,6 +119,8 @@ class GaussianDiffusion:
                               original paper (0 to 1000).
     """
 
+    get_named_beta_schedule = staticmethod(get_named_beta_schedule)
+
     def __init__(
         self,
         *,
