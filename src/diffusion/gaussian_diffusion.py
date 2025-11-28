@@ -120,6 +120,9 @@ class GaussianDiffusion:
     """
 
     get_named_beta_schedule = staticmethod(get_named_beta_schedule)
+    LossType = LossType
+    ModelMeanType = ModelMeanType
+    ModelVarType = ModelVarType
 
     def __init__(
         self,
