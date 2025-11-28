@@ -7,7 +7,7 @@ import os
 import socket
 
 import blobfile as bf
-from mpi4py import MPI
+# from mpi4py import MPI
 import torch as th
 import torch.distributed as dist
 
@@ -21,24 +21,34 @@ SETUP_RETRY_COUNT = 3
 def setup_dist():
     """
     Setup a distributed process group.
+    Modifié pour forcer un environnement mono-GPU/mono-processus DDP.
     """
     if dist.is_initialized():
         return
-    os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+    
+    # Forcez la carte graphique visible si nécessaire (déjà fait, mais gardons-le)
+    # Note: L'environnement externe 'CUDA_VISIBLE_DEVICES=3' devrait prévaloir
+    # sur cette ligne si elle est présente.
+    # os.environ["CUDA_VISIBLE_DEVICES"] = "0" 
 
-    comm = MPI.COMM_WORLD
-    backend = "gloo" if not th.cuda.is_available() else "nccl"
-
-    if backend == "gloo":
-        hostname = "localhost"
-    else:
-        hostname = socket.gethostbyname(socket.getfqdn())
-    os.environ["MASTER_ADDR"] = comm.bcast(hostname, root=0)
-    os.environ["RANK"] = str(comm.rank)
-    os.environ["WORLD_SIZE"] = str(comm.size)
-
-    port = comm.bcast(_find_free_port(), root=0)
+    # --- SIMULATION DES VARIABLES D'ENVIRONNEMENT MPI/DISTRIBUÉES ---
+    # Pour que PyTorch DDP puisse s'initialiser correctement en mode mono-processus.
+    os.environ["RANK"] = "0"
+    os.environ["WORLD_SIZE"] = "1"
+    os.environ["MASTER_ADDR"] = "localhost"
+    
+    # Chercher un port libre
+    try:
+        port = _find_free_port()
+    except:
+        # Fallback
+        port = 29500 
+        
     os.environ["MASTER_PORT"] = str(port)
+    
+    backend = "gloo" if not th.cuda.is_available() else "nccl"
+    
+    # Initialise le groupe de processus PyTorch
     dist.init_process_group(backend=backend, init_method="env://")
 
 
@@ -50,28 +60,17 @@ def dev():
         return th.device(f"cuda")
     return th.device("cpu")
 
-
+# Modified function
 def load_state_dict(path, **kwargs):
     """
-    Load a PyTorch file without redundant fetches across MPI ranks.
+    Load a PyTorch file. Dans un environnement mono-GPU, on charge simplement.
     """
-    chunk_size = 2 ** 30  # MPI has a relatively small size limit
-    if MPI.COMM_WORLD.Get_rank() == 0:
+    if dist.get_rank() == 0:
         with bf.BlobFile(path, "rb") as f:
             data = f.read()
-        num_chunks = len(data) // chunk_size
-        if len(data) % chunk_size:
-            num_chunks += 1
-        MPI.COMM_WORLD.bcast(num_chunks)
-        for i in range(0, len(data), chunk_size):
-            MPI.COMM_WORLD.bcast(data[i : i + chunk_size])
+        return th.load(io.BytesIO(data), **kwargs)
     else:
-        num_chunks = MPI.COMM_WORLD.bcast(None)
-        data = bytes()
-        for _ in range(num_chunks):
-            data += MPI.COMM_WORLD.bcast(None)
-
-    return th.load(io.BytesIO(data), **kwargs)
+        raise RuntimeError("Non-rank 0 reached load_state_dict in single-process mode.")
 
 
 def sync_params(params):
