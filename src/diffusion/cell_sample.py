@@ -9,8 +9,12 @@ import torch as th
 import torch.distributed as dist
 import random
 
-from guided_diffusion import dist_util, logger
-from guided_diffusion.script_util import (   
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+from src.utils import dist_util, logger
+from src.utils.script_util import (   
     NUM_CLASSES,
     model_and_diffusion_defaults,
     create_model_and_diffusion,
