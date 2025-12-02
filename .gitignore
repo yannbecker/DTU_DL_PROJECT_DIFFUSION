@@ -3,6 +3,9 @@ __pycache__/
 *.py[codz]
 *$py.class
 
+# .DS_Store
+*.DS_Store
+
 # C extensions
 *.so
 
@@ -12,6 +15,7 @@ data/
 *.sh
 output/
 src/VAE/annotation_model_v1/
+weights/
 
 # Job scheduler log
 *.out

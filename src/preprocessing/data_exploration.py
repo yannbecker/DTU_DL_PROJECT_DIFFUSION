@@ -8,16 +8,16 @@ import seaborn as sns
 
 # Load all 4 datasets
 # adata_sc_genes = ad.read_h5ad('/work3/s193518/scIsoPred/data/sc_processed_genes.h5ad')
-# adata_sc_transcripts = ad.read_h5ad('/work3/s193518/scIsoPred/data/sc_processed_transcripts.h5ad')
-adata_bulk_genes = ad.read_h5ad('/work3/s193518/scIsoPred/data/bulk_processed_genes.h5ad')
-adata_bulk_transcripts = ad.read_h5ad('/work3/s193518/scIsoPred/data/bulk_processed_transcripts.h5ad')
+adata_sc_transcripts = ad.read_h5ad('/work3/s193518/scIsoPred/data/sc_processed_transcripts.h5ad')
+# adata_bulk_genes = ad.read_h5ad('/work3/s193518/scIsoPred/data/bulk_processed_genes.h5ad')
+# adata_bulk_transcripts = ad.read_h5ad('/work3/s193518/scIsoPred/data/bulk_processed_transcripts.h5ad')
 
 # Store in dictionary for easy iteration
 datasets = {
     # 'sc_genes': adata_sc_genes,
-    # 'sc_transcripts': adata_sc_transcripts,
-    'bulk_genes': adata_bulk_genes,
-    'bulk_transcripts': adata_bulk_transcripts
+    'sc_transcripts': adata_sc_transcripts,
+    # 'bulk_genes': adata_bulk_genes,
+    # 'bulk_transcripts': adata_bulk_transcripts
 }
 
 # ============================================================
