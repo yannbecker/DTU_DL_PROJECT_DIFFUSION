@@ -4,17 +4,52 @@ Usage:
         [--device cpu] [--out results.json] [--max-cells 20000]
 """
 
+import sys
+from pathlib import Path
+
+print("===== DEBUG START =====")
+print("Current working directory:", Path.cwd())
+print("sys.path before any change:")
+for p in sys.path:
+    print(" ", p)
+
+# Ajout du dossier src pour les imports
+sys.path.append(str(Path(__file__).resolve().parents[1]))
+print("\nsys.path after adding src:")
+for p in sys.path:
+    print(" ", p)
+
+# Test import evaluations2
+try:
+    import evaluations2
+    print("\nSuccessfully imported evaluations2")
+    print("Contents of evaluations2:", dir(evaluations2))
+    if hasattr(evaluations2, "MMD_METRICS"):
+        print("MMD_METRICS found")
+    else:
+        print("MMD_METRICS NOT found")
+except Exception as e:
+    print("\nFailed to import evaluations2:")
+    print(e)
+
+# Test import VAE
+try:
+    from VAE_model import VAE
+    print("Successfully imported VAE_model.VAE")
+except Exception as e:
+    print("Failed to import VAE_model.VAE:")
+    print(e)
+
+print("===== DEBUG END =====\n")
+
 import argparse
 import json
-from pathlib import Path
 import numpy as np
 import anndata as ad
 import scanpy as sc
 import torch
 import time
 
-import sys
-from pathlib import Path
 
 sys.path.append(str(Path(__file__).resolve().parents[1]))
 
