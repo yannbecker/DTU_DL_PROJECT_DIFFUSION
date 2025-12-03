@@ -94,3 +94,7 @@ mmd = MMDLoss()
 kl = GaussianKLDivergence()
 wasserstein1 = partial(wasserstein, method="sinkhorn", power=1)
 wasserstein2 = partial(wasserstein, method="sinkhorn", power=2)
+
+MMD_METRICS = {"mmd": mmd}
+KL_METRICS = {"kl": kl}
+WASSERSTEIN_METRICS = {"wass1": wasserstein1, "wass2": wasserstein2}
