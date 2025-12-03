@@ -14,7 +14,7 @@ for p in sys.path:
     print(" ", p)
 
 # Ajout du dossier src pour les imports
-sys.path.append(str(Path(__file__).resolve().parents[1]))
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 print("\nsys.path after adding src:")
 for p in sys.path:
     print(" ", p)
