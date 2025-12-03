@@ -70,7 +70,7 @@ def load_VAE(device: str = "cpu") -> torch.nn.Module:
         decoder_activation='ReLU',
     )
     autoencoder.load_state_dict(torch.load(
-        './model_seed=0_step=1999.pt',
+        args.vae_path,
         map_location=device
     ))
     autoencoder.to(device)
@@ -192,6 +192,7 @@ def main():
     parser.add_argument("--device", default="cpu", choices=["cpu", "cuda"], help="Device to run metrics on")
     parser.add_argument("--out", default="metrics_results.json", help="Output JSON file for metrics")
     parser.add_argument("--max-cells", type=int, default=20000, help="Maximum number of cells to use")
+    parser.add_argument("--vae_path", type=str, required=True, help="Path to the pre-trained VAE model weights (.pt file)")
     args = parser.parse_args()
 
     print(f"Loading VAE on device {args.device}...")
