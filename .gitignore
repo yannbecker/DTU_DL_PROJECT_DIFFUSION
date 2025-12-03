@@ -16,6 +16,8 @@ data/
 output/
 src/VAE/annotation_model_v1/
 weights/
+*.pt
+*.npz
 
 # Job scheduler log
 *.out
