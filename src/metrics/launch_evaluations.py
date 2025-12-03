@@ -16,7 +16,7 @@ import time
 import sys
 from pathlib import Path
 
-sys.path.append(str(Path(__file__).resolve().parents[2]))
+sys.path.append(str(Path(__file__).resolve().parents[1]))
 
 from src.metrics.evaluations2 import MMD_METRICS, WASSERSTEIN_METRICS, KL_METRICS
 from src.VAE.VAE_model import VAE
