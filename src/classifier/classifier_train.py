@@ -212,10 +212,10 @@ def split_microbatches(microbatch, *args):
 
 def create_argparser():
     defaults = dict(
-        data_dir="/work3/s193518/scIsoPred/data/bulk_processed_transcripts.h5ad",
+        data_dir="/work3/s193518/scIsoPred/data/sc_processed_transcripts.h5ad",
         val_data_dir="",
         noised=True,
-        iterations=1000,
+        iterations=200000,
         lr=3e-4,
         weight_decay=0.0,
         anneal_lr=False,
@@ -226,9 +226,9 @@ def create_argparser():
         log_interval=20,
         eval_interval=20,
         save_interval=500,
-        vae_path='/zhome/70/a/224464/DL_project17/DTU_DL_PROJECT_DIFFUSION/src/VAE/output/ae_checkpoint/vae_bulk_transcript_pca/model_seed=0_step=1999.pt',
+        vae_path='zhome/5b/d/223428/DTU_DL_PROJECT_DIFFUSION/src/VAE/output/ae_checkpoint/vae_bulk_transcript_pca/model_seed=0_step=1999.pt',
         latent_dim=128,
-        model_path='output/classifier_checkpoint/classifier_bulk_processed_transcripts',
+        model_path='output/classifier_checkpoint/classifier_sc_processed_transcripts',
         start_guide_time=500,
         num_class=5, ########### /!\ à adapter à la condition key (leiden -> 5 classes)
     )
