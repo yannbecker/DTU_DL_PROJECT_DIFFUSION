@@ -70,7 +70,7 @@ def load_VAE(device: str = "cpu") -> torch.nn.Module:
         decoder_activation='ReLU',
     )
     autoencoder.load_state_dict(torch.load(
-        '/model_seed=0_step=1999.pt',
+        './model_seed=0_step=1999.pt',
         map_location=device
     ))
     autoencoder.to(device)
