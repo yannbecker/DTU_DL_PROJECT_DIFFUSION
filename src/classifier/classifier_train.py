@@ -226,11 +226,11 @@ def create_argparser():
         log_interval=20,
         eval_interval=20,
         save_interval=500,
-        vae_path='zhome/5b/d/223428/DTU_DL_PROJECT_DIFFUSION/src/VAE/output/ae_checkpoint/vae_bulk_transcript_pca/model_seed=0_step=1999.pt',
+        vae_path='zhome/5b/d/223428/DTU_DL_PROJECT_DIFFUSION/src/VAE/output/ae_checkpoint/vae_sc_transcript/model_seed=0_step=3999.pt',
         latent_dim=128,
         model_path='output/classifier_checkpoint/classifier_sc_processed_transcripts',
         start_guide_time=500,
-        num_class=5, ########### /!\ à adapter à la condition key (leiden -> 5 classes)
+        num_class=44, ########### /!\ à adapter à la condition key (leiden -> 5 classes)
     )
     num_class = defaults['num_class']
     defaults.update(classifier_and_diffusion_defaults())
