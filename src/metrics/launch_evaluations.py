@@ -34,7 +34,7 @@ except Exception as e:
 
 # Test import VAE
 try:
-    from VAE_model import VAE
+    from src.VAE.VAE_model import VAE
     print("Successfully imported VAE_model.VAE")
 except Exception as e:
     print("Failed to import VAE_model.VAE:")
