@@ -82,6 +82,35 @@ class MMDLoss(nn.Module):
         return k_xx.mean() + k_yy.mean() - 2 * k_xy.mean()
 
 
+class GaussianKLDivergence(nn.Module):
+    """
+    KL( N(mu1, sigma1) || N(mu2, sigma2) )
+    where sigma are diagonal covariances (vectors)
+    """
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, x: torch.Tensor, y: torch.Tensor):
+        # Compute empirical means
+        mu1 = x.mean(dim=0)
+        mu2 = y.mean(dim=0)
+
+        # Variances (diagonal covariances)
+        var1 = x.var(dim=0) + 1e-8
+        var2 = y.var(dim=0) + 1e-8
+
+        # KL divergence between two diagonal Gaussians
+        kl = 0.5 * (
+            torch.log(var2 / var1).sum()
+            + (var1 / var2).sum()
+            + ((mu2 - mu1) ** 2 / var2).sum()
+            - x.shape[1]
+        )
+
+        return kl
+
+
+
 def wasserstein(
     x0: torch.Tensor,
     x1: torch.Tensor,
@@ -131,5 +160,9 @@ WASSERSTEIN_METRICS = {
 R2_METRICS = {
     "r2_mean": lambda preds, target: r2_score(preds.mean(0), target.mean(0)),
     "r2_var": lambda preds, target: r2_score(preds.var(0), target.var(0)),
+}
+
+KL_METRICS = {
+    "gaussian_kl": GaussianKLDivergence(),
 }
 
