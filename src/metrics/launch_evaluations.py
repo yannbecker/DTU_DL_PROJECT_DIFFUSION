@@ -60,7 +60,7 @@ from src.VAE.VAE_model import VAE
 # -------------------------
 # Load VAE
 # -------------------------
-def load_VAE(device: str = "cpu") -> torch.nn.Module:
+def load_VAE(device: str = "cpu", vae_path: str = None) -> torch.nn.Module:
     autoencoder = VAE(
         num_genes=162009,
         device=device,
@@ -70,7 +70,7 @@ def load_VAE(device: str = "cpu") -> torch.nn.Module:
         decoder_activation='ReLU',
     )
     autoencoder.load_state_dict(torch.load(
-        args.vae_path,
+        vae_path,
         map_location=device
     ))
     autoencoder.to(device)
@@ -196,7 +196,7 @@ def main():
     args = parser.parse_args()
 
     print(f"Loading VAE on device {args.device}...")
-    vae = load_VAE(device=args.device)
+    vae = load_VAE(device=args.device, vae_path=args.vae_path)
 
     print("Loading real data...")
     real_np = load_real_features(args.real)
@@ -211,6 +211,8 @@ def main():
     out_path = Path(args.out)
     out_path.write_text(json.dumps(results, indent=2))
     print(f"Results saved to {out_path}")
+
+
 
 
 if __name__ == "__main__":
