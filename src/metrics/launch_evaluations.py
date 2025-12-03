@@ -13,8 +13,13 @@ import scanpy as sc
 import torch
 import time
 
-from evaluations2 import MMD_METRICS, WASSERSTEIN_METRICS, KL_METRICS
-from VAE_model import VAE
+import sys
+from pathlib import Path
+
+sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+from src.metrics.evaluations2 import MMD_METRICS, WASSERSTEIN_METRICS, KL_METRICS
+from src.VAE.VAE_model import VAE
 
 
 # -------------------------
