@@ -150,11 +150,11 @@ def main():
     
     vae_path = Path(WEIGHTS_ROOT) / f"model_vae_{MODE}.pt"
     vae = load_VAE(
-        vae_path=None,
+        vae_path=vae_path,
         num_gene=input_dim,
         hidden_dim=128
     )
-    
+
     vae.to(device)
     vae.eval()
     print("Model loaded.")
