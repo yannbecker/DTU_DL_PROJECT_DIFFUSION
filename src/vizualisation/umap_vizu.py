@@ -113,7 +113,7 @@ def process_and_plot(adata_combined, title, filename):
         frameon=False,
         legend_loc='right margin'
     )
-    plt.savefig(OUTPUT_DIR / filename, bbox_inches='tight', dpi=300)
+    plt.savefig(f"{OUTPUT_DIR}/{filename}", bbox_inches='tight', dpi=300)
     plt.close()
     print(f"Saved: {filename}")
 
