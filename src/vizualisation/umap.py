@@ -135,8 +135,9 @@ def main():
     # --- A. Chargement Données Réelles ---
     real_data_path = REAL_DATA_PATHS[MODE]
     print(f"Loading Real Data from {real_data_path}...")
-    if not real_data_path.exists():
-        raise FileNotFoundError(f"Real data not found at {real_data_path}")
+    if not Path(real_data_path).exists():
+        raise FileNotFoundError(f"Dataset réel introuvable : {real_data_path}")
+    
         
     adata_real = sc.read_h5ad(str(real_data_path), backed='r')
     # Subset pour éviter la surcharge mémoire (ex: 5000 cellules)
@@ -175,9 +176,9 @@ def main():
     if not GUIDED:
         # CAS 1: NON-GUIDED (1 seul fichier global)
         file_name = f"{MODE}_250000.npz"
-        file_path = INPUT_DIR / file_name
+        file_path = Path(INPUT_DIR) / file_name
         
-        if file_path.exists():
+        if file_name.exists():
             print(f"Processing Global file: {file_path.name}")
             npz = np.load(file_path)
             latent_gen = npz['cell_gen'][:5000] # Même nombre que réel
