@@ -86,7 +86,7 @@ def load_vae(device):
     weight_filename = f"model_vae_{MODE}.pt"
     weight_path = f"{WEIGHTS_ROOT}/{weight_filename}"
     
-    if not weight_path.exists():
+    if not Path(weight_path).exists():
         raise FileNotFoundError(f"Poids introuvables : {weight_path}")
     
     # On a besoin de la dimension d'entrée. 
@@ -178,7 +178,7 @@ def main():
         file_name = f"{MODE}_250000.npz"
         file_path = Path(INPUT_DIR) / file_name
         
-        if file_name.exists():
+        if file_path.exists():
             print(f"Processing Global file: {file_path.name}")
             npz = np.load(file_path)
             latent_gen = npz['cell_gen'][:5000] # Même nombre que réel
