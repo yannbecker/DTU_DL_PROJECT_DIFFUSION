@@ -52,7 +52,9 @@ else:
     INPUT_DIR = f'{DATA_ROOT}/non_guided'
 
 OUTPUT_DIR = f"output/umap_{MODE}_{'guided' if GUIDED else 'non_guided'}"
-OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
+
+# mkdir output if not exists
+Path(OUTPUT_DIR).mkdir(parents=True, exist_ok=True)
 
 print(f"=== CONFIGURATION ===")
 print(f"Mode: {MODE}")
