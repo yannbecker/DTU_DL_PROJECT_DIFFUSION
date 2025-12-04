@@ -42,9 +42,12 @@ except ImportError:
     print("Erreur: Impossible d'importer VAE_model. Vérifiez votre sys.path.")
     sys.exit(1)
 
+# zhome path hpc
+ZHOME_PATH = "/zhome/5b/d/223428/DTU_DL_PROJECT_DIFFUSION"
+
 # Configuration of paths
-DATA_ROOT = f'data/{MODE}'
-WEIGHTS_ROOT = f'weights/{MODE}'
+DATA_ROOT = f'{ZHOME_PATH}data/{MODE}'
+WEIGHTS_ROOT = f'{ZHOME_PATH}weights/{MODE}'
 
 if GUIDED:
     INPUT_DIR = f'{DATA_ROOT}/guided'
