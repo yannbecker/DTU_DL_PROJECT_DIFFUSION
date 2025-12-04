@@ -47,7 +47,7 @@ ZHOME_PATH = "/zhome/5b/d/223428/DTU_DL_PROJECT_DIFFUSION/"
 
 # Configuration of paths
 DATA_ROOT = f'{ZHOME_PATH}data/{MODE}'
-WEIGHTS_ROOT = f'{ZHOME_PATH}weights/{MODE}'
+WEIGHTS_ROOT = f'{ZHOME_PATH}weights'
 
 if GUIDED:
     INPUT_DIR = f'{DATA_ROOT}/guided'
