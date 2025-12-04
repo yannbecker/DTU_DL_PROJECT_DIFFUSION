@@ -81,12 +81,13 @@ def train_vae(args, return_model=False):
         autoencoder, datasets = prepare_vae(args, checkpoint_path)
     else:
         autoencoder, datasets = prepare_vae(args)
-   
+
     args["hparams"] = autoencoder.hparams
-
+    
     start_time = time.time()
-    for step in tqdm(range(args["max_steps"])):
-
+    print('Starting training VAE model...')
+    for step in range(args["max_steps"]):
+        print('Training step: ', step)
         genes, _ = next(datasets)
         genes = torch.tensor(genes, dtype=torch.float32, device=autoencoder.device)
 
@@ -127,28 +128,30 @@ def parse_arguments():
 
     parser = argparse.ArgumentParser(description="Finetune Scimilarity")
     # dataset arguments
-    parser.add_argument("--data_dir", type=str, default='/work3/s193518/scIsoPred/data/bulk_processed_transcripts.h5ad')
+    parser.add_argument("--data_dir", type=str, default='/work3/s193518/scIsoPred/data/sc_processed_transcripts.h5ad')
     parser.add_argument("--loss_ae", type=str, default="mse")
     parser.add_argument("--decoder_activation", type=str, default="ReLU")
     parser.add_argument("--use_pca", type=bool, default=False)
     parser.add_argument("--plot_pca", type=bool, default=True)
+    
 
     # AE arguments                                             
     parser.add_argument("--local_rank", type=int, default=0)  
     parser.add_argument("--split_seed", type=int, default=1234)
-    parser.add_argument("--num_genes", type=int, default=162009) # if use PCA, num_genes means PCA dim, VAE latent dim
+    parser.add_argument("--num_genes", type=int, default=179610) # if use PCA, num_genes means PCA dim, VAE latent dim
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--hparams", type=str, default="")
+    parser.add_argument("--train_vae", type=bool, default=True)
 
     # training arguments
-    parser.add_argument("--max_steps", type=int, default=2000)
-    parser.add_argument("--max_minutes", type=int, default=300)
-    parser.add_argument("--checkpoint_freq", type=int, default=50000)
+    parser.add_argument("--max_steps", type=int, default=4000)
+    parser.add_argument("--max_minutes", type=int, default=3000)
+    parser.add_argument("--checkpoint_freq", type=int, default=1000)
     parser.add_argument("--batch_size", type=int, default=128)
-    parser.add_argument("--state_dict", type=str, default="./src/VAE/annotation_model_v1")  # if pretrain
+    parser.add_argument("--state_dict", type=str, default="./annotation_model_v1")  # if pretrain
     # parser.add_argument("--state_dict", type=str, default=None)   # if not pretrain
 
-    parser.add_argument("--save_dir", type=str, default='./output/ae_checkpoint/vae_bulk_transcript_pca/')
+    parser.add_argument("--save_dir", type=str, default='./output/ae_checkpoint/vae_sc_transcript/')
     parser.add_argument("--sweep_seeds", type=int, default=200)
     return dict(vars(parser.parse_args()))
 
