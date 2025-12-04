@@ -48,9 +48,12 @@ def load_VAE(vae_path, num_gene, hidden_dim):
     print(f"Loading weights from {vae_path} to CPU first...")
     try:
         # Chargement sécurisé sur CPU
-        state_dict = torch.load(vae_path, map_location='cpu')
-        autoencoder.load_state_dict(state_dict)
-        print("Weights loaded successfully.")
+        with open(vae_path, 'rb') as f:
+
+            state_dict = torch.load(f, map_location='cpu')
+
+            autoencoder.load_state_dict(state_dict)
+            print("Weights loaded successfully.")
     except Exception as e:
         print(f"CRITICAL ERROR loading weights: {e}")
         # Optionnel: Afficher la taille du fichier pour debug
@@ -60,7 +63,6 @@ def load_VAE(vae_path, num_gene, hidden_dim):
         else:
             print("File does not exist at this path!")
         raise e
-        
     autoencoder.to(device)
     return autoencoder
 
