@@ -43,7 +43,7 @@ except ImportError:
     sys.exit(1)
 
 # zhome path hpc
-ZHOME_PATH = "/zhome/5b/d/223428/DTU_DL_PROJECT_DIFFUSION"
+ZHOME_PATH = "/zhome/5b/d/223428/DTU_DL_PROJECT_DIFFUSION/"
 
 # Configuration of paths
 DATA_ROOT = f'{ZHOME_PATH}data/{MODE}'
