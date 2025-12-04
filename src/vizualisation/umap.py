@@ -148,7 +148,7 @@ def main():
     # --- B. Chargement Modèle VAE ---
     input_dim = adata_subset.shape[1]
     
-    vae_path = Path(WEIGHTS_ROOT) / f"model_vae_{MODE}.pt"
+    vae_path = f"{WEIGHTS_ROOT}/model_vae_{MODE}.pt"
     vae = load_VAE(
         vae_path=vae_path,
         num_gene=input_dim,
