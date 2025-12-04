@@ -25,6 +25,8 @@ sys.path.append(HPC_ROOT)
 
 try:
     from src.VAE.VAE_model import VAE
+    from evaluations2 import MMDLoss, wasserstein, GaussianKLDivergence
+
 except ImportError:
     print(f"Error: Unable to import VAE_model from path: {HPC_ROOT}")
     sys.exit(1)
