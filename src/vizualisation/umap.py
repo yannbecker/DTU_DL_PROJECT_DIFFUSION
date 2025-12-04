@@ -30,7 +30,9 @@ REAL_DATA_PATHS = {
 # 2. SETUP & PATHS
 # ==========================================
 
-PROJECT_ROOT = Path(__file__).resolve().parent.parent
+import sys
+from pathlib import Path
+sys.path.append(str(Path(__file__).resolve().parents[2]))
 
 
 # local import of VAE model
@@ -41,15 +43,15 @@ except ImportError:
     sys.exit(1)
 
 # Configuration of paths
-DATA_ROOT = PROJECT_ROOT / 'data' / MODE
-WEIGHTS_ROOT = PROJECT_ROOT / 'weights' / MODE
+DATA_ROOT = 'data' / MODE
+WEIGHTS_ROOT = 'weights' / MODE
 
 if GUIDED:
     INPUT_DIR = DATA_ROOT / 'guided'
 else:
     INPUT_DIR = DATA_ROOT / 'non_guided'
 
-OUTPUT_DIR = PROJECT_ROOT / 'output' / f"umap_{MODE}_{'guided' if GUIDED else 'non_guided'}"
+OUTPUT_DIR = 'output' / f"umap_{MODE}_{'guided' if GUIDED else 'non_guided'}"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 print(f"=== CONFIGURATION ===")
@@ -129,7 +131,7 @@ def main():
     print(f"Device: {device}")
 
     # --- A. Chargement Données Réelles ---
-    real_data_path = PROJECT_ROOT / REAL_DATA_PATHS[MODE]
+    real_data_path = REAL_DATA_PATHS[MODE]
     print(f"Loading Real Data from {real_data_path}...")
     if not real_data_path.exists():
         raise FileNotFoundError(f"Real data not found at {real_data_path}")
