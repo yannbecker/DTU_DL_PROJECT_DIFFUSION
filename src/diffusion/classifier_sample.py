@@ -26,7 +26,7 @@ from src.utils.script_util import (
 )
 import scanpy as sc
 import torch
-from VAE.VAE_model import VAE
+from src.VAE.VAE_model import VAE
 
 def load_VAE(ae_dir, num_gene):
     autoencoder = VAE(

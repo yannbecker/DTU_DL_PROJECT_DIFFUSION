@@ -93,6 +93,7 @@ def load_data(
     plot_path='output/plots/pca_variance.png',
     save_pca_path='output/data/pca_reduced_data.h5ad',
     condition_key=None,  # NOUVEAU PARAMÈTRE
+    unique_class=None,   # NOUVEAU PARAMETRE
 ):
     """
     For a dataset, create a generator over (cells, kwargs) pairs.
@@ -108,20 +109,46 @@ def load_data(
     # 1. Gestion des Labels (Conditionning)
     labels = None
     num_classes = 0
+    raw_labels = None
     print(f"Condition key: {condition_key}")
+    
     if condition_key is not None:
         print("Entering condition key related part")
         if condition_key in adata.obs.columns:
             print(f"Loading labels from adata.obs['{condition_key}']...")
-            # Encodage des labels (str -> int)
-            le = LabelEncoder()
-            # On convertit en string pour éviter les erreurs si mix types
-            raw_labels = adata.obs[condition_key].astype(str).values 
-            labels = le.fit_transform(raw_labels)
-            num_classes = len(le.classes_)
-            print(f"Found {num_classes} classes: {le.classes_}")
+            # On utilise les labels bruts (str) pour le filtrage
+            raw_labels = adata.obs[condition_key].astype(str).values
         else:
             raise KeyError(f"La clé '{condition_key}' n'existe pas dans adata.obs. Clés disponibles: {adata.obs.columns.tolist()}")
+
+    # ----------------------------------------------------
+    # DÉBUT DE LA LOGIQUE DE FILTRAGE PAR CLASSE UNIQUE
+    # ----------------------------------------------------
+    if unique_class is not None and raw_labels is not None:
+        unique_class = str(unique_class) # S'assurer de la cohérence de type
+        print(f"Filtering dataset for unique class: '{unique_class}'.")
+        
+        # Trouver les indices des cellules de la classe désirée
+        indices_to_keep = np.where(raw_labels == unique_class)[0]
+        
+        if len(indices_to_keep) == 0:
+            raise ValueError(f"Aucune cellule trouvée pour la classe '{unique_class}' avec la condition_key '{condition_key}'. Vérifiez les valeurs uniques dans '{condition_key}'.")
+            
+        # Filtrer adata et raw_labels
+        adata = adata[indices_to_keep, :].copy()
+        raw_labels = raw_labels[indices_to_keep] 
+        print(f"New data shape after filtering: {adata.X.shape}")
+    # ----------------------------------------------------
+    # FIN DE LA LOGIQUE DE FILTRAGE PAR CLASSE UNIQUE
+    # ----------------------------------------------------
+
+    # ENCODAGE DES LABELS (y compris pour le sous-ensemble filtré)
+    if raw_labels is not None:
+        le = LabelEncoder()
+        labels = le.fit_transform(raw_labels)
+        num_classes = len(le.classes_)
+        # Si le filtrage a eu lieu, num_classes sera 1 et toutes les cellules auront le label 0.
+        print(f"Found {num_classes} classes after optional filtering: {le.classes_}")
 
     # 2. Pré-traitement classique (Normalisation / Log1p)
     # Note: Si c'est déjà normalisé, scanpy le détectera souvent ou c'est à gérer en amont.

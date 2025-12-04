@@ -38,7 +38,9 @@ def prepare_vae(args, state_dict=None):
         train_vae=True,
         use_pca=args["use_pca"],         
         pca_dim=args["num_genes"],  # num_genes now means PCA dim
-        plot_pca=args["plot_pca"]
+        plot_pca=args["plot_pca"],
+        condition_key=args["condition_key"],    # for unique class 
+        unique_class=args["unique_class"]       # for unique class
     )
     # if args["use_pca"]:
     #     args["num_genes"] = datasets[0][0].shape[1]  # update num_genes to PCA dim
@@ -134,6 +136,9 @@ def parse_arguments():
     parser.add_argument("--use_pca", type=bool, default=False)
     parser.add_argument("--plot_pca", type=bool, default=True)
     
+    # Unique class training arguments
+    parser.add_argument("--condition_key", type=str, default=None, help="Column in adata.obs to use for cell type labels (e.g., 'leiden').")
+    parser.add_argument("--unique_class", type=str, default=None, help="If provided (e.g., '0' or 'B cell'), only train the VAE on cells belonging to this specific class found in condition_key.")
 
     # AE arguments                                             
     parser.add_argument("--local_rank", type=int, default=0)  

@@ -43,7 +43,8 @@ def main():
         batch_size=args.batch_size,
         vae_path=args.vae_path,
         train_vae=False,
-        condition_key="leiden",
+        condition_key=args.condition_key,
+        unique_class=args.unique_class,
     )
 
     logger.log("training...")
@@ -86,8 +87,10 @@ def create_argparser():
         vae_path = '/zhome/70/a/224464/DL_project17/DTU_DL_PROJECT_DIFFUSION/src/VAE/output/ae_checkpoint/vae_bulk_transcript_pca/model_seed=0_step=1999.pt',
         model_name="bulk_diffusion",
         save_dir='output/diffusion_checkpoint',
-        # class_cond=True,  # /!\ à adapter si on veut intégrer le conditionnement au training
-        # num_class=5,      # à adapter au nombre de classes trouvées pour la condition_key
+        class_cond=True,  # /!\ à adapter si on veut intégrer le conditionnement au training
+        num_class=5,      # à adapter au nombre de classes trouvées pour la condition_key
+        condition_key=None, # condition key (e.g. 'leiden')
+        unique_class=None,  # specific class to load (e.g. '0')
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

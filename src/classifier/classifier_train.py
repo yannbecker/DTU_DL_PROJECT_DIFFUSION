@@ -85,7 +85,8 @@ def main():
         vae_path=args.vae_path,     
         hidden_dim=args.latent_dim,
         train_vae=False,
-        condition_key = "leiden",
+        condition_key=args.condition_key,
+        unique_class=args.unique_class,
     )
     if args.val_data_dir:
         val_data = load_data(
@@ -231,6 +232,8 @@ def create_argparser():
         model_path='output/classifier_checkpoint/classifier_sc_processed_transcripts',
         start_guide_time=500,
         num_class=44, ########### /!\ à adapter à la condition key (leiden -> 5 classes)
+        condition_key=None, # condition key (e.g. 'leiden')
+        unique_class=None,  # specific class to load (e.g. '0')
     )
     num_class = defaults['num_class']
     defaults.update(classifier_and_diffusion_defaults())
