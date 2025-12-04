@@ -90,10 +90,11 @@ def process_and_plot(adata_combined, title, filename):
     """Pipeline Scanpy standard pour UMAP + Plot."""
     # Preprocessing spécifique pour la visualisation
     sc.pp.highly_variable_genes(adata_combined, min_mean=0.0125, max_mean=3, min_disp=0.5)
+    adata_combined.raw = adata_combined
     adata_combined = adata_combined[:, adata_combined.var.highly_variable]
     sc.pp.scale(adata_combined)
     sc.tl.pca(adata_combined, svd_solver='arpack')
-    sc.pp.neighbors(adata_combined, n_neighbors=15, n_pcs=30)
+    sc.pp.neighbors(adata_combined, n_neighbors=15, n_pcs=20)
     sc.tl.umap(adata_combined)
     
     # Plot
