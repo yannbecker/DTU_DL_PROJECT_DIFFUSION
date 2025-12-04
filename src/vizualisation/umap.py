@@ -168,7 +168,7 @@ def main():
         hidden_dim=128,
         decoder_activation='ReLU',
     )
-    state_dict = torch.load(str(vae_weight_path), map_location='cpu')
+    state_dict = torch.load(str(vae_weight_path), map_location=torch.device('cpu'))
     vae.load_state_dict(state_dict)
     vae.to(device)
     vae.eval()
