@@ -33,6 +33,37 @@ def load_VAE(vae_path, num_gene, hidden_dim):
     autoencoder.load_state_dict(torch.load(vae_path))
     return autoencoder
 
+def load_VAE(vae_path, num_gene, hidden_dim):
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    
+    autoencoder = VAE(
+        num_genes=num_gene,
+        device=device,
+        seed=0,
+        loss_ae='mse',
+        hidden_dim=hidden_dim,
+        decoder_activation='ReLU',
+    )
+    
+    print(f"Loading weights from {vae_path} to CPU first...")
+    try:
+        # Chargement sécurisé sur CPU
+        state_dict = torch.load(vae_path, map_location='cpu')
+        autoencoder.load_state_dict(state_dict)
+        print("Weights loaded successfully.")
+    except Exception as e:
+        print(f"CRITICAL ERROR loading weights: {e}")
+        # Optionnel: Afficher la taille du fichier pour debug
+        import os
+        if os.path.exists(vae_path):
+            print(f"File size: {os.path.getsize(vae_path)} bytes")
+        else:
+            print("File does not exist at this path!")
+        raise e
+        
+    autoencoder.to(device)
+    return autoencoder
+
 def load_data(
     *,
     data_dir,
