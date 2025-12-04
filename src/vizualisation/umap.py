@@ -1,3 +1,4 @@
+from json import load
 import os
 # Force CUDA device 0
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
@@ -38,6 +39,7 @@ sys.path.append(str(Path(__file__).resolve().parents[2]))
 # local import of VAE model
 try:
     from src.VAE.VAE_model import VAE
+    from src.preprocessing.cell_datasets_loader import load_VAE
 except ImportError:
     print("Erreur: Impossible d'importer VAE_model. Vérifiez votre sys.path.")
     sys.exit(1)
@@ -83,19 +85,6 @@ def get_device():
         return 'mps'
     else:
         return 'cpu'
-
-def load_vae(device):
-    """Charge le modèle VAE spécifique au mode (sc ou bulk)."""
-    weight_filename = f"model_vae_{MODE}.pt"
-    weight_path = f"{WEIGHTS_ROOT}/{weight_filename}"
-    
-    if not Path(weight_path).exists():
-        raise FileNotFoundError(f"Poids introuvables : {weight_path}")
-    
-    # On a besoin de la dimension d'entrée. 
-    # Astuce: on la déduit plus tard ou on la fixe si connue.
-    # Pour l'instant on charge l'état et on l'appliquera après avoir chargé les données réelles pour connaitre la dim.
-    return weight_path
 
 def process_and_plot(adata_combined, title, filename):
     """Pipeline Scanpy standard pour UMAP + Plot."""
@@ -158,18 +147,14 @@ def main():
 
     # --- B. Chargement Modèle VAE ---
     input_dim = adata_subset.shape[1]
-    vae_weight_path = load_vae(device)
     
-    vae = VAE(
-        num_genes=input_dim,
-        device=device,
-        seed=0,
-        loss_ae='mse',
-        hidden_dim=128,
-        decoder_activation='ReLU',
+    vae_path = Path(WEIGHTS_ROOT) / f"model_vae_{MODE}.pt"
+    vae = load_VAE(
+        vae_path=None,
+        num_gene=input_dim,
+        hidden_dim=128
     )
-    state_dict = torch.load(str(vae_weight_path), map_location=torch.device('cpu'))
-    vae.load_state_dict(state_dict)
+    
     vae.to(device)
     vae.eval()
     print("Model loaded.")
