@@ -15,10 +15,10 @@ import glob
 # ==========================================
 
 # Choice of the mode: Single-Cell ('sc') or Bulk ('bulk')
-MODE = 'sc'  
+MODE = 'bulk'  
 
 # Choice of the type: Guided (True) or Non-Guided (False)
-GUIDED = True 
+GUIDED = False 
 
 # Real data paths
 REAL_DATA_PATHS = {
@@ -43,15 +43,15 @@ except ImportError:
     sys.exit(1)
 
 # Configuration of paths
-DATA_ROOT = 'data' / MODE
-WEIGHTS_ROOT = 'weights' / MODE
+DATA_ROOT = f'data/{MODE}'
+WEIGHTS_ROOT = f'weights/{MODE}'
 
 if GUIDED:
-    INPUT_DIR = DATA_ROOT / 'guided'
+    INPUT_DIR = f'{DATA_ROOT}/guided'
 else:
-    INPUT_DIR = DATA_ROOT / 'non_guided'
+    INPUT_DIR = f'{DATA_ROOT}/non_guided'
 
-OUTPUT_DIR = 'output' / f"umap_{MODE}_{'guided' if GUIDED else 'non_guided'}"
+OUTPUT_DIR = f"output/umap_{MODE}_{'guided' if GUIDED else 'non_guided'}"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 print(f"=== CONFIGURATION ===")
@@ -82,7 +82,7 @@ def get_device():
 def load_vae(device):
     """Charge le modèle VAE spécifique au mode (sc ou bulk)."""
     weight_filename = f"model_vae_{MODE}.pt"
-    weight_path = WEIGHTS_ROOT / weight_filename
+    weight_path = f"{WEIGHTS_ROOT}/{weight_filename}"
     
     if not weight_path.exists():
         raise FileNotFoundError(f"Poids introuvables : {weight_path}")
