@@ -30,7 +30,7 @@ def load_VAE(vae_path, num_gene, hidden_dim):
         decoder_activation='ReLU',
     )
     # Mapping location to cpu/cuda handled by torch.load generally, but rigorous mapping helps
-    autoencoder.load_state_dict(torch.load(vae_path, map_location='cuda'))
+    autoencoder.load_state_dict(torch.load(vae_path))
     return autoencoder
 
 def load_data(
