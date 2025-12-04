@@ -20,18 +20,18 @@ def stabilize(expression_matrix):
     phi_hat, _ = optimize.curve_fit(lambda mu, phi: mu + phi * mu ** 2, expression_matrix.mean(1), expression_matrix.var(1))
     return np.log(expression_matrix + 1. / (2 * phi_hat[0]))
 
-def load_VAE(vae_path, num_gene, hidden_dim):
-    autoencoder = VAE(
-        num_genes=num_gene,
-        device='cuda',
-        seed=0,
-        loss_ae='mse',
-        hidden_dim=hidden_dim,
-        decoder_activation='ReLU',
-    )
-    # Mapping location to cpu/cuda handled by torch.load generally, but rigorous mapping helps
-    autoencoder.load_state_dict(torch.load(vae_path))
-    return autoencoder
+# def load_VAE(vae_path, num_gene, hidden_dim):
+#     autoencoder = VAE(
+#         num_genes=num_gene,
+#         device='cuda',
+#         seed=0,
+#         loss_ae='mse',
+#         hidden_dim=hidden_dim,
+#         decoder_activation='ReLU',
+#     )
+#     # Mapping location to cpu/cuda handled by torch.load generally, but rigorous mapping helps
+#     autoencoder.load_state_dict(torch.load(vae_path))
+#     return autoencoder
 
 def load_VAE(vae_path, num_gene, hidden_dim):
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
