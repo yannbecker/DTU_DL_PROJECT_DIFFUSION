@@ -132,20 +132,24 @@ def load_real_data(path, num_samples=20000):
 def plot_umap(adata_combined, title, filename, color_by='Condition'):
     print(f"Generating plot: {title} (Color by: {color_by})")
     
-        # Scanpy Pipeline
+    # Scanpy Pipeline
     # Lowering min_mean slightly to ensure enough genes are kept for clustering views
     sc.pp.highly_variable_genes(adata_combined, min_mean=0.0125, max_mean=3, min_disp=0.5)
     adata_combined = adata_combined[:, adata_combined.var.highly_variable]
+    
+    # Scaling and PCA
     sc.pp.scale(adata_combined)
     sc.tl.pca(adata_combined, svd_solver='arpack')
+
+    # Neighbors and UMAP
     sc.pp.neighbors(adata_combined, n_neighbors=15, n_pcs=30)
     sc.tl.umap(adata_combined)
     
-    fig, ax = plt.subplots(figsize=(8, 6)) # Slightly wider for legend
+    fig, ax = plt.subplots(figsize=(7, 7)) # Slightly wider for legend
     
     # Logic for palette selection
     if color_by == 'Condition':
-        custom_palette = {'Real': '#b0bec5', 'Generated': '#e91e63'}
+        custom_palette = {'Real': '#263238', 'Generated': '#e91e63'}
     else:
         # Use default Scanpy palette for clusters (handles many colors better)
         custom_palette = None 
@@ -154,13 +158,15 @@ def plot_umap(adata_combined, title, filename, color_by='Condition'):
         adata_combined, 
         color=color_by, 
         palette=custom_palette, 
-        alpha=0.7,
-        size=20, 
+        alpha=0.75,
+        size=25, 
         ax=ax, 
         show=False, 
         title=title, 
         frameon=False,
-        legend_loc='right margin'
+        legend_loc='right margin',
+        legend_fontsize=12,
+        legend_fontweight='bold'
     )
     plt.savefig(filename, bbox_inches='tight', dpi=300)
     plt.close()
@@ -186,10 +192,11 @@ def run_visualization(args, paths):
     vae.eval()
     print("VAE loaded.")
 
+    k_real = args.k if args.k is not None else args.num_samples
     # C. Processing
     
     # ---------------------------------------------------------
-    # MODE 1: GUIDED + SPECIFIC CLUSTERS (NEW FEATURE)
+    # MODE 1: GUIDED + SPECIFIC CLUSTERS 
     # ---------------------------------------------------------
     if args.guided and args.clusters:
         print(f"--- Generating Combined Plot for Clusters: {args.clusters} ---")
@@ -206,55 +213,51 @@ def run_visualization(args, paths):
         if 'leiden' not in adata_subset.obs:
             raise ValueError("Real data does not have 'leiden' column.")
 
-        # Filter real data
-        real_mask = adata_subset.obs['leiden'].isin(target_clusters)
-        if sum(real_mask) == 0:
-            print("Warning: No real cells found for these clusters.")
-        else:
-            real_data_filtered = real_tensor[real_mask]
-            real_labels = adata_subset.obs['leiden'][real_mask].values
-            
-            X_list.append(real_data_filtered)
-            obs_leiden.extend(real_labels)
-            obs_condition.extend(['Real'] * len(real_data_filtered))
-            print(f"Added {len(real_data_filtered)} Real cells.")
-
-        # 2. Process Generated Data for these clusters
         for cluster_id in target_clusters:
+            # 1. Real Data
+            mask = adata_subset.obs['leiden'] == cluster_id
+            real_cluster_data = real_tensor[mask]
+            
+            if len(real_cluster_data) > 0:
+                # Subsample real data to k
+                n_real = min(len(real_cluster_data), k_real)
+                idx = np.random.choice(len(real_cluster_data), n_real, replace=False)
+                real_sub = real_cluster_data[idx]
+                
+                X_list.append(real_sub)
+                obs_leiden.extend([cluster_id] * n_real)
+                obs_condition.extend(['Real'] * n_real)
+
+            # 2. Generated Data
             file_name = f"{args.mode}_250000_leiden{cluster_id}.npz"
             fpath = os.path.join(paths['input_dir'], file_name)
             
             if os.path.exists(fpath):
                 npz = np.load(fpath)
-                # Limit generated cells (e.g. 500 per cluster to avoid overcrowding)
-                latent_gen = npz['cell_gen'][:500] 
+                # Limit generated cells to num_samples
+                latent_gen = npz['cell_gen']
+                n_gen = min(len(latent_gen), args.num_samples)
+                latent_sub = latent_gen[:n_gen]
                 
                 with torch.no_grad():
-                    t_in = torch.tensor(latent_gen, dtype=torch.float32).to(device)
+                    t_in = torch.tensor(latent_sub, dtype=torch.float32).to(device)
                     decoded = vae(t_in, return_decoded=True).cpu().numpy()
                 
                 X_list.append(decoded)
-                # Assign the specific cluster ID to these generated cells
-                obs_leiden.extend([cluster_id] * len(decoded))
-                obs_condition.extend(['Generated'] * len(decoded))
-                print(f"Added {len(decoded)} Generated cells for Cluster {cluster_id}")
+                obs_leiden.extend([cluster_id] * n_gen)
+                obs_condition.extend(['Generated'] * n_gen)
             else:
-                print(f"Warning: File not found for Cluster {cluster_id}: {fpath}")
+                print(f"Warning: File not found for Cluster {cluster_id}")
 
-        # 3. Combine and Plot
         if len(X_list) > 0:
             X_final = np.concatenate(X_list, axis=0)
             adata_final = sc.AnnData(X=X_final)
-            adata_final.obs['leiden'] = obs_leiden # This column is used for coloring
+            adata_final.obs['leiden'] = obs_leiden
             adata_final.obs['Condition'] = obs_condition
-            
-            # Force 'leiden' to be categorical for correct coloring
             adata_final.obs['leiden'] = adata_final.obs['leiden'].astype('category')
             
             out_name = f"{paths['output_dir']}/UMAP_Combined_Clusters_{'_'.join(target_clusters)}.png"
             plot_umap(adata_final, f"Combined Clusters ({args.mode.upper()})", out_name, color_by='leiden')
-        else:
-            print("No data found for specified clusters.")
 
     # ---------------------------------------------------------
     # MODE 2: GUIDED (Iterate all individual files)
@@ -271,23 +274,31 @@ def run_visualization(args, paths):
             print(f"--> Cluster {cluster_id}")
             
             npz = np.load(fpath)
-            latent_gen = npz['cell_gen'][:2000]
+            latent_gen = npz['cell_gen']
+            n_gen = min(len(latent_gen), args.num_samples)
+            latent_sub = latent_gen[:n_gen]
             
             with torch.no_grad():
-                t_in = torch.tensor(latent_gen, dtype=torch.float32).to(device)
+                t_in = torch.tensor(latent_sub, dtype=torch.float32).to(device)
                 decoded = vae(t_in, return_decoded=True).cpu().numpy()
             
             if 'leiden' not in adata_subset.obs:
                 break
             
             real_mask = adata_subset.obs['leiden'] == cluster_id
-            if sum(real_mask) < 5:
-                continue
-                
+              
             real_cluster_data = real_tensor[real_mask]
-            X_final = np.concatenate([real_cluster_data, decoded], axis=0)
+            if len(real_cluster_data) < 5:
+                continue
+
+            n_real = min(len(real_cluster_data), k_real)
+            idx = np.random.choice(len(real_cluster_data), n_real, replace=False)
+            real_sub = real_cluster_data[idx]
+
+            X_final = np.concatenate([real_sub, decoded], axis=0)
+
             adata_final = sc.AnnData(X=X_final)
-            adata_final.obs['Condition'] = ['Real'] * len(real_cluster_data) + ['Generated'] * len(decoded)
+            adata_final.obs['Condition'] = ['Real'] * n_real + ['Generated'] * n_gen
             
             out_name = f"{paths['output_dir']}/UMAP_Cluster_{cluster_id}.png"
             plot_umap(adata_final, f"Cluster {cluster_id} ({args.mode.upper()})", out_name, color_by='Condition')
@@ -323,8 +334,14 @@ if __name__ == "__main__":
     parser.add_argument('--guided', action='store_true')
     parser.add_argument('--transfer', action='store_true')
     parser.add_argument('--clusters', nargs='+', type=str, default=None, help="List of specific cluster IDs to combine (e.g. 0 1 4)")
-    parser.add_argument('--num_samples', type=int, default=20000, 
-    help="Number of real samples to load (-1 for all)")
+    parser.add_argument('--num_samples', type=int, default=1000, 
+                        help="Number of generated samples to use per cluster (or global). Default 1000.")
+    
+    parser.add_argument('--k', type=int, default=None,
+                        help="Max number of real samples per cluster. Defaults to num_samples if not set.")
+    
+    parser.add_argument('--num_real_load', type=int, default=-1, 
+                        help="Total number of real cells to load from disk (-1 for all). Default -1.")
     # Hardcoded paths here to avoid argument issues
     real_paths = {
         'sc': '/work3/s193518/scIsoPred/data/sc_processed_transcripts.h5ad',
