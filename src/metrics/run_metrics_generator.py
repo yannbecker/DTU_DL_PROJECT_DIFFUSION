@@ -25,7 +25,7 @@ sys.path.append(HPC_ROOT)
 
 try:
     from src.VAE.VAE_model import VAE
-    from evaluations2 import compute_kl, compute_mmd, compute_wasserstein
+    from evaluations2 import compute_kl, compute_mmd, compute_wasserstein, compute_random_forest
 except ImportError:
     print(f"Error: Unable to import VAE_model from path: {HPC_ROOT}")
     sys.exit(1)
