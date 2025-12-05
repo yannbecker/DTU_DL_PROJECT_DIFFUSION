@@ -1,7 +1,7 @@
 import os
 from turtle import st
 
-from src.utils.fp16_util import state_dict_to_master_params
+# from src.utils.fp16_util import state_dict_to_master_params
 # Force CUDA device 0
 os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
