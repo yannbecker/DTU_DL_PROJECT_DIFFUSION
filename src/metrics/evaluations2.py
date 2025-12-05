@@ -13,7 +13,7 @@ from sklearn.ensemble import RandomForestClassifier
 from sklearn.model_selection import  train_test_split
 from sklearn.metrics import *
 import scanpy as sc
-
+import sys, os
 
 # ==========
 #  MMD
@@ -126,6 +126,8 @@ def compute_random_forest(
         
         original : np.ndarray, 
         generated : np.ndarray, 
+        output_path : str,
+        figure_name : str,
         n_estimators = 1000, 
         max_depth= 5,      
         oob_score=True,
@@ -175,7 +177,7 @@ def compute_random_forest(
     plt.ylim(0, 1)
     plt.title("ROC curve of random forest")
     plt.text(0.15,0.9,"AUC = "+str(round(aucval,4)))
-    plt.show()
+    plt.savefig(os.path.join(output_path, figure_name))
     return {"train accuracy": train_acc, 
             "validation accuracy": val_acc, 
             "auc": aucval, 
