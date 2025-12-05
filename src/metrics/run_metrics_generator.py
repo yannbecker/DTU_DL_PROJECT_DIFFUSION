@@ -330,7 +330,7 @@ def run_metrics(args, paths):
     # D. Save Metrics Results
     if results_list:
         df = pd.DataFrame(results_list)
-        out_path = f"{paths['output_dir']}/{paths['csv_name']}.csv"
+        out_path = f"{paths['output_dir']}/{paths['csv_name']}"
         df.to_csv(out_path, index=False)
         print(f"Metrics results saved to {out_path}")
         print(df.head())
