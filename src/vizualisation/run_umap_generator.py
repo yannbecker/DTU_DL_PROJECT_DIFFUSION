@@ -46,17 +46,17 @@ def get_device():
 def setup_paths(args):
     """Dynamically constructs paths using f-strings."""
     
-    # 1. Choose DATA folder
+    # 1. Choose DATA folder and VAE suffix
     if args.mode == 'sc':
+        vae_mode = "sc"
         if args.transfer:
             data_folder = "sc_transfer"
         elif args.unique:
             data_folder = "sc_unique_class"
-        else:
-            data_folder = "sc"
+            vae_mode = "sc_unique_class"
     else:
-        # Bulk mode (usually no transfer, but keeping logic clean)
         data_folder = "bulk"
+        vae_mode = "bulk"
     
     # 2. Choose sub-folder (guided/non_guided)
     if args.guided:
@@ -64,11 +64,7 @@ def setup_paths(args):
     else:
         sub_folder = "non_guided"
 
-    # 3. Choose VAE suffix (sc or bulk)
-    # The VAE depends on data modality, not transfer learning
-    vae_mode = "sc" if args.mode == "sc" else "bulk"
-
-    # 4. Construct full paths with f-strings
+    # 3. Construct full paths with f-strings
     data_root = f"{HPC_ROOT}/data/{data_folder}"
     input_dir = f"{data_root}/{sub_folder}"
     if args.unique:
