@@ -99,28 +99,6 @@ def explore_anndata(name, adata):
 for name, adata in datasets.items():
     explore_anndata(name, adata)
 
-# # 1. How many multi-isoform genes?
-# print(f"Multi-isoform genes: {len(ad.uns['multi_isoform_genes'])}")
-# print(f"Total genes: {len(ad.uns['gene_n_transcripts'])}")
 
-# # 2. Is data raw counts?
-# if hasattr(ad.X, 'toarray'):
-#     X_sample = ad.X[:100, :100].toarray()
-# else:
-#     X_sample = ad.X[:100, :100]
-# print(f"Is integer data: {np.allclose(X_sample, X_sample.astype(int))}")
-
-# # 3. How many cell clusters?
-# print(f"Number of clusters: {ad.obs['leiden'].nunique()}")
-
-# # 4. Data size
-# print(f"Shape: {ad.shape[0]} cells × {ad.shape[1]} isoforms")
-
-# # 5. Sparsity
-# if hasattr(ad.X, 'toarray'):
-#     sparsity = (ad.X.toarray() == 0).mean() * 100
-# else:
-#     sparsity = (ad.X == 0).mean() * 100
-# print(f"Sparsity: {sparsity:.1f}%")
 
 
