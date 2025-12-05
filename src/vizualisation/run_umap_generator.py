@@ -256,8 +256,16 @@ def run_visualization(args, paths):
             adata_final.obs['Condition'] = obs_condition
             adata_final.obs['leiden'] = adata_final.obs['leiden'].astype('category')
             
+            # ADD THIS: Create combined label
+            adata_final.obs['Cluster_Condition'] = [
+                f"{leiden}_{cond}" for leiden, cond in 
+                zip(adata_final.obs['leiden'], adata_final.obs['Condition'])
+            ]
+            
             out_name = f"{paths['output_dir']}/UMAP_Combined_Clusters_{'_'.join(target_clusters)}.png"
-            plot_umap(adata_final, f"Combined Clusters ({args.mode.upper()})", out_name, color_by='leiden')
+            plot_umap(adata_final, f"Combined Clusters ({args.mode.upper()})", 
+                    out_name, color_by='Cluster_Condition')
+
 
     # ---------------------------------------------------------
     # MODE 2: GUIDED (Iterate all individual files)
