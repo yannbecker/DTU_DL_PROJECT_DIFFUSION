@@ -94,12 +94,31 @@ def setup_paths(args):
 
     return paths
 
-def load_real_data(path, num_samples=5000):
+def load_real_data(path, num_samples=20000):
+    """
+    Loads real data. 
+    If num_samples is -1, loads all data.
+    Otherwise, loads the first num_samples.
+    """
     print(f"Loading real data from {path}...")
+    
+    # Load in backed mode first to avoid checking file size manually
     adata_real = sc.read_h5ad(path, backed='r')
-    adata_subset = adata_real[:num_samples].to_memory()
+    
+    # specific logic to handle "All Data" vs "Subset"
+    if num_samples == -1 or num_samples >= adata_real.n_obs:
+        print(f"--> Loading ALL {adata_real.n_obs} cells.")
+        adata_subset = adata_real.to_memory()
+    else:
+        print(f"--> Loading first {num_samples} cells out of {adata_real.n_obs}.")
+        # WARNING: This takes the first N cells. If your data is sorted by cluster,
+        # you might miss specific clusters. Ideally, shuffle the .h5ad beforehand
+        # or use random indices here if memory allows.
+        adata_subset = adata_real[:num_samples].to_memory()
+
     adata_subset.var_names_make_unique()
     
+    # Basic preprocessing
     sc.pp.filter_cells(adata_subset, min_genes=10)
     sc.pp.normalize_total(adata_subset, target_sum=1e4)
     sc.pp.log1p(adata_subset)
@@ -110,10 +129,11 @@ def load_real_data(path, num_samples=5000):
         
     return adata_subset, real_tensor
 
-def plot_umap(adata_combined, title, filename):
-    print(f"Generating plot: {title}")
+def plot_umap(adata_combined, title, filename, color_by='Condition'):
+    print(f"Generating plot: {title} (Color by: {color_by})")
     
-    # Scanpy Pipeline
+        # Scanpy Pipeline
+    # Lowering min_mean slightly to ensure enough genes are kept for clustering views
     sc.pp.highly_variable_genes(adata_combined, min_mean=0.0125, max_mean=3, min_disp=0.5)
     adata_combined = adata_combined[:, adata_combined.var.highly_variable]
     sc.pp.scale(adata_combined)
@@ -121,12 +141,25 @@ def plot_umap(adata_combined, title, filename):
     sc.pp.neighbors(adata_combined, n_neighbors=15, n_pcs=30)
     sc.tl.umap(adata_combined)
     
-    fig, ax = plt.subplots(figsize=(6, 6))
-    custom_palette = {'Real': '#b0bec5', 'Generated': '#e91e63'}
+    fig, ax = plt.subplots(figsize=(8, 6)) # Slightly wider for legend
+    
+    # Logic for palette selection
+    if color_by == 'Condition':
+        custom_palette = {'Real': '#b0bec5', 'Generated': '#e91e63'}
+    else:
+        # Use default Scanpy palette for clusters (handles many colors better)
+        custom_palette = None 
     
     sc.pl.umap(
-        adata_combined, color='Condition', palette=custom_palette, alpha=0.7,
-        size=20, ax=ax, show=False, title=title, frameon=False,
+        adata_combined, 
+        color=color_by, 
+        palette=custom_palette, 
+        alpha=0.7,
+        size=20, 
+        ax=ax, 
+        show=False, 
+        title=title, 
+        frameon=False,
         legend_loc='right margin'
     )
     plt.savefig(filename, bbox_inches='tight', dpi=300)
@@ -142,13 +175,11 @@ def run_visualization(args, paths):
     print(f"Device: {device}")
 
     # A. Real Data
-    adata_subset, real_tensor = load_real_data(paths['real_data_path'])
+    adata_subset, real_tensor = load_real_data(paths['real_data_path'], args.num_samples)
     
-    # B. VAE
+    # B. VAE Setup
     input_dim = adata_subset.shape[1]
     vae = VAE(num_genes=input_dim, device=device, seed=0, loss_ae='mse', hidden_dim=128, decoder_activation='ReLU')
-    
-    # Load weights on CPU first for safety
     state_dict = torch.load(paths['weights_path'], map_location='cpu')
     vae.load_state_dict(state_dict)
     vae.to(device)
@@ -156,38 +187,84 @@ def run_visualization(args, paths):
     print("VAE loaded.")
 
     # C. Processing
-    if not args.guided:
-        # Non-Guided Mode
-        file_name = f"{args.mode}_250000.npz"
-        file_path = f"{paths['input_dir']}/{file_name}"
+    
+    # ---------------------------------------------------------
+    # MODE 1: GUIDED + SPECIFIC CLUSTERS (NEW FEATURE)
+    # ---------------------------------------------------------
+    if args.guided and args.clusters:
+        print(f"--- Generating Combined Plot for Clusters: {args.clusters} ---")
         
-        if os.path.exists(file_path):
-            npz = np.load(file_path)
-            # Limit to the number of real cells for visual balance
-            latent_gen = npz['cell_gen'][:len(real_tensor)]
-            
-            with torch.no_grad():
-                t_in = torch.tensor(latent_gen, dtype=torch.float32).to(device)
-                decoded = vae(t_in, return_decoded=True).cpu().numpy()
-            
-            X_final = np.concatenate([real_tensor, decoded], axis=0)
-            obs = ['Real'] * len(real_tensor) + ['Generated'] * len(decoded)
-            adata_final = sc.AnnData(X=X_final)
-            adata_final.obs['Condition'] = obs
-            
-            out_name = f"{paths['output_dir']}/UMAP_Global.png"
-            plot_umap(adata_final, f"{args.mode.upper()} Global UMAP", out_name)
-        else:
-            print(f"File not found: {file_path}")
+        # Containers for concatenation
+        X_list = []
+        obs_leiden = []
+        obs_condition = []
+        
+        # 1. Process Real Data for these clusters
+        # Ensure strict string matching
+        target_clusters = [str(c) for c in args.clusters]
+        
+        if 'leiden' not in adata_subset.obs:
+            raise ValueError("Real data does not have 'leiden' column.")
 
-    else:
-        # Guided Mode
+        # Filter real data
+        real_mask = adata_subset.obs['leiden'].isin(target_clusters)
+        if sum(real_mask) == 0:
+            print("Warning: No real cells found for these clusters.")
+        else:
+            real_data_filtered = real_tensor[real_mask]
+            real_labels = adata_subset.obs['leiden'][real_mask].values
+            
+            X_list.append(real_data_filtered)
+            obs_leiden.extend(real_labels)
+            obs_condition.extend(['Real'] * len(real_data_filtered))
+            print(f"Added {len(real_data_filtered)} Real cells.")
+
+        # 2. Process Generated Data for these clusters
+        for cluster_id in target_clusters:
+            file_name = f"{args.mode}_250000_leiden{cluster_id}.npz"
+            fpath = os.path.join(paths['input_dir'], file_name)
+            
+            if os.path.exists(fpath):
+                npz = np.load(fpath)
+                # Limit generated cells (e.g. 500 per cluster to avoid overcrowding)
+                latent_gen = npz['cell_gen'][:500] 
+                
+                with torch.no_grad():
+                    t_in = torch.tensor(latent_gen, dtype=torch.float32).to(device)
+                    decoded = vae(t_in, return_decoded=True).cpu().numpy()
+                
+                X_list.append(decoded)
+                # Assign the specific cluster ID to these generated cells
+                obs_leiden.extend([cluster_id] * len(decoded))
+                obs_condition.extend(['Generated'] * len(decoded))
+                print(f"Added {len(decoded)} Generated cells for Cluster {cluster_id}")
+            else:
+                print(f"Warning: File not found for Cluster {cluster_id}: {fpath}")
+
+        # 3. Combine and Plot
+        if len(X_list) > 0:
+            X_final = np.concatenate(X_list, axis=0)
+            adata_final = sc.AnnData(X=X_final)
+            adata_final.obs['leiden'] = obs_leiden # This column is used for coloring
+            adata_final.obs['Condition'] = obs_condition
+            
+            # Force 'leiden' to be categorical for correct coloring
+            adata_final.obs['leiden'] = adata_final.obs['leiden'].astype('category')
+            
+            out_name = f"{paths['output_dir']}/UMAP_Combined_Clusters_{'_'.join(target_clusters)}.png"
+            plot_umap(adata_final, f"Combined Clusters ({args.mode.upper()})", out_name, color_by='leiden')
+        else:
+            print("No data found for specified clusters.")
+
+    # ---------------------------------------------------------
+    # MODE 2: GUIDED (Iterate all individual files)
+    # ---------------------------------------------------------
+    elif args.guided:
         pattern = f"{paths['input_dir']}/{args.mode}_250000_leiden*.npz"
         files = sorted(glob.glob(pattern))
         print(f"Cluster files found: {len(files)}")
         
         for fpath in files:
-            # Extract cluster ID from filename
             filename = os.path.basename(fpath)
             cluster_id = filename.split('leiden')[-1].replace('.npz', '')
             
@@ -201,7 +278,6 @@ def run_visualization(args, paths):
                 decoded = vae(t_in, return_decoded=True).cpu().numpy()
             
             if 'leiden' not in adata_subset.obs:
-                print("No 'leiden' column in real data.")
                 break
             
             real_mask = adata_subset.obs['leiden'] == cluster_id
@@ -214,14 +290,41 @@ def run_visualization(args, paths):
             adata_final.obs['Condition'] = ['Real'] * len(real_cluster_data) + ['Generated'] * len(decoded)
             
             out_name = f"{paths['output_dir']}/UMAP_Cluster_{cluster_id}.png"
-            plot_umap(adata_final, f"Cluster {cluster_id} ({args.mode.upper()})", out_name)
+            plot_umap(adata_final, f"Cluster {cluster_id} ({args.mode.upper()})", out_name, color_by='Condition')
+
+    # ---------------------------------------------------------
+    # MODE 3: NON-GUIDED (Global)
+    # ---------------------------------------------------------
+    else:
+        file_name = f"{args.mode}_250000.npz"
+        file_path = f"{paths['input_dir']}/{file_name}"
+        
+        if os.path.exists(file_path):
+            npz = np.load(file_path)
+            latent_gen = npz['cell_gen'][:len(real_tensor)]
+            
+            with torch.no_grad():
+                t_in = torch.tensor(latent_gen, dtype=torch.float32).to(device)
+                decoded = vae(t_in, return_decoded=True).cpu().numpy()
+            
+            X_final = np.concatenate([real_tensor, decoded], axis=0)
+            obs = ['Real'] * len(real_tensor) + ['Generated'] * len(decoded)
+            adata_final = sc.AnnData(X=X_final)
+            adata_final.obs['Condition'] = obs
+            
+            out_name = f"{paths['output_dir']}/UMAP_Global.png"
+            plot_umap(adata_final, f"{args.mode.upper()} Global UMAP", out_name, color_by='Condition')
+        else:
+            print(f"File not found: {file_path}")
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--mode', type=str, choices=['sc', 'bulk'], required=True)
     parser.add_argument('--guided', action='store_true')
     parser.add_argument('--transfer', action='store_true')
-    
+    parser.add_argument('--clusters', nargs='+', type=str, default=None, help="List of specific cluster IDs to combine (e.g. 0 1 4)")
+    parser.add_argument('--num_samples', type=int, default=20000, 
+    help="Number of real samples to load (-1 for all)")
     # Hardcoded paths here to avoid argument issues
     real_paths = {
         'sc': '/work3/s193518/scIsoPred/data/sc_processed_transcripts.h5ad',
