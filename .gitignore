@@ -16,6 +16,7 @@ data/
 output/
 src/VAE/annotation_model_v1/
 weights/
+plots/
 *.pt
 *.npz
 
