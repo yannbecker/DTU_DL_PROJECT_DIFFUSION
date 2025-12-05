@@ -5,6 +5,11 @@ from typing import Literal
 import ot
 import torch
 from torch import nn
+import numpy as np
+import anndata as ad
+
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import *
 
 
 # ==========
@@ -32,6 +37,12 @@ class MMDLoss(nn.Module):
         k_yy = self.kernel(y, y).mean()
         k_xy = self.kernel(x, y).mean()
         return k_xx + k_yy - 2 * k_xy
+    
+def compute_mmd(original : np.ndarray, generated : np.ndarray, kernel=None) -> float:
+    x = torch.from_numpy(generated)
+    y = torch.from_numpy(original)
+    Loss = MMDLoss()
+    return Loss.forward(x,y).numpy()
 
 
 # ===========================
@@ -53,6 +64,13 @@ class GaussianKLDivergence(nn.Module):
             - x.shape[1]
         )
         return kl
+    
+def compute_kl(original, generated):
+    
+    x = torch.from_numpy(generated)
+    y = torch.from_numpy(original)
+    GaussianKLD = GaussianKLDivergence()
+    return GaussianKLD.forward(x,y).numpy()
 
 
 # ===========================
@@ -86,11 +104,37 @@ def wasserstein(
 
     return dist
 
+def compute_wasserstein(
+        original : np.ndarray,
+        generated : np.ndarray, 
+        method:Literal["emd", "sinkhorn"] ="emd", 
+        reg:float = 0.05, 
+        power:int =2 ):
+
+    x = torch.from_numpy(generated)
+    y = torch.from_numpy(original)
+    return wasserstein(x,y,method,reg,power)
+
+
+def compute_correlations():
+    pass
+
+def compute_random_forest(
+        original, 
+        generated, 
+        n_estimators = 1000, 
+        max_depth= 5,      
+        oob_score=True,
+        class_weight = "balanced",
+        random_state=1):
+    
+    pass
 
 # ===========================
 #   Convenience objects
 # ===========================
 mmd = MMDLoss()
+
 kl = GaussianKLDivergence()
 wasserstein1 = partial(wasserstein, method="sinkhorn", power=1)
 wasserstein2 = partial(wasserstein, method="sinkhorn", power=2)
