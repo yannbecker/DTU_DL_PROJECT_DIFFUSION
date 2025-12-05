@@ -1,7 +1,7 @@
 import os
 from turtle import st
 
-from src.utils.fp16_util import state_dict_to_master_params
+# from src.utils.fp16_util import state_dict_to_master_params
 # Force CUDA device 0
 #os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
@@ -20,14 +20,19 @@ from sklearn.decomposition import PCA
 # 1. SETUP (Paths & Imports)
 # ==========================================
 # To adapt to HPC 
-HPC_ROOT = "/zhome/f0/d/223076/DTU_DL_PROJECT_DIFFUSION"
+HPC_ROOT = "/zhome/f0/d/223076/Projet_Deep_Learning/DTU_DL_PROJECT_DIFFUSION"
+          # /zhome/f0/d/223076/Projet_Deep_Learning/DTU_DL_PROJECT_DIFFUSION
 sys.path.append(HPC_ROOT)
 
 try:
     from src.VAE.VAE_model import VAE
-    from evaluations2 import compute_kl, compute_mmd, compute_wasserstein, compute_random_forest
 except ImportError:
-    print(f"Error: Unable to import VAE_model from path: {HPC_ROOT}")
+    print(f"Error: Unable to import VAE_model from path: {HPC_ROOT}+'/src/VAE")
+    sys.exit(1)
+try:
+    from src.metrics.evaluations2 import compute_kl, compute_mmd, compute_wasserstein, compute_random_forest
+except ImportError:
+    print(f"Error: Unable to import evaluations2 from path: {HPC_ROOT}+'/src/metrics")
     sys.exit(1)
 
 # ==========================================

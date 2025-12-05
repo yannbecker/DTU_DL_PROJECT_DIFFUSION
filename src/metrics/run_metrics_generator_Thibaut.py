@@ -3,7 +3,7 @@ import os
 
 # from src.utils.fp16_util import state_dict_to_master_params
 # Force CUDA device 0
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+#os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 import sys
 import argparse
@@ -20,7 +20,7 @@ from sklearn.decomposition import PCA
 # 1. SETUP (Paths & Imports)
 # ==========================================
 # To adapt to HPC 
-HPC_ROOT = "/zhome/5b/d/223428/DTU_DL_PROJECT_DIFFUSION"
+HPC_ROOT = "/zhome/f0/d/223076/Projet_Deep_Learning/DTU_DL_PROJECT_DIFFUSION"
 sys.path.append(HPC_ROOT)
 
 try:
@@ -31,7 +31,11 @@ except ImportError:
     print(f"Error: Unable to import VAE_model from path: {HPC_ROOT}")
     sys.exit(1)
 
-from evaluation3 import compute_correlations, compute_mmd, compute_wasserstein, compute_random_forest, compute_kl
+try :
+    from evaluation3 import compute_correlations, compute_mmd, compute_wasserstein, compute_random_forest, compute_kl
+except ImportError:
+    print(f"Error: Unable to import evaluation3 from path: {HPC_ROOT}+'/src/metrics")
+    sys.exit(1)
 
 
 # Eventuellement faire les appels aux fonctions de metrics ici
@@ -114,8 +118,8 @@ def get_metrics_for_batch(real_data, gen_data, label, paths, args):
         random_forest_results = compute_random_forest(
             original=real_pca,
             generated=gen_pca,
-            output_path=f"{paths["output_dir"]}",            
-            figure_name=f"random_forest_plot_{label}.png",
+            output_path=f"{paths['output_dir']}",            
+            figure_name=f"random_forest_plot_{label}_{args.mode}_{args.guided}_{args.transfer}.png",
             n_estimators=1000,
             max_depth=5,
             oob_score=True,
@@ -351,6 +355,7 @@ if __name__ == "__main__":
     parser.add_argument('--num_real', type=int, default=5000,
                         help="Number of real cells to load from the .h5ad file (global cap).")
     parser.add_argument('--rf', action='store_true', help='Whether to compute Random Forest metrics and save the ROC plot')
+    parser.add_argument('--per_cluster', action="store_true", help='Whether to compute per-cluster metrics in guided mode')
     # A completer: autres arguments nécessaires
 
     # Hardcoded paths here to avoid argument issues
