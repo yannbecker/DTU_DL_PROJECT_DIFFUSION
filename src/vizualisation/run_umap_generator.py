@@ -50,6 +50,8 @@ def setup_paths(args):
     if args.mode == 'sc':
         if args.transfer:
             data_folder = "sc_transfer"
+        elif args.unique:
+            data_folder = "sc_unique_class"
         else:
             data_folder = "sc"
     else:
@@ -69,7 +71,10 @@ def setup_paths(args):
     # 4. Construct full paths with f-strings
     data_root = f"{HPC_ROOT}/data/{data_folder}"
     input_dir = f"{data_root}/{sub_folder}"
-    weights_path = f"{HPC_ROOT}/weights/model_vae_{vae_mode}.pt"
+    if args.unique:
+        weights_path = f"{HPC_ROOT}/weights/model_vae_{vae_mode}_unique_class.pt"
+    else:
+        weights_path = f"{HPC_ROOT}/weights/model_vae_{vae_mode}.pt"
     real_data_path = args.real_data_paths[args.mode]
     
     output_folder_name = f"umap_{data_folder}_{sub_folder}"
@@ -281,7 +286,86 @@ def run_visualization(args, paths):
     print("VAE loaded.")
 
     k_real = args.k if args.k is not None else args.num_samples
+
     # C. Processing
+
+    # ---------------------------------------------------------
+    # MODE 0 UNIQUE CLASS
+    # ---------------------------------------------------------
+    if args.unique:
+        print("--- Mode: Unique Class Visualization ---")
+
+        # Identifying real class
+        if 'leiden' not in adata_subset.obs:
+            raise ValueError("Error: 'leiden' does not exist in dataset file.")
+
+        # Assuming class of interest is "0"
+        target_class = '0'
+
+        leiden_col = adata_subset.obs['leiden'].astype(str)
+
+        mask_target = (leiden_col == target_class)
+        mask_background = (leiden_col != target_class)
+
+        real_target = real_tensor[mask_target]
+        real_background = real_tensor[mask_background]
+
+        print(f"Background cells (Gray): {len(real_background)}")
+        print(f"Target Class {target_class} cells (Blue): {len(real_target)}")
+
+        # Loading generated samples
+        pattern = f"{paths['input_dir']}/*.npz"
+        files = sorted(glob.glob(pattern))
+
+        target_file = None
+        for f in files:
+            if f"leiden{target_class}" in f:
+                target_file = f
+                break
+        if target_file is None and len(files) > 0:
+            target_file = files[0] # Fallback
+
+        if target_file:
+            print(f"Loading generated samples from: {os.path.basename(target_file)}")
+            npz = np.load(target_file)
+            latent_gen = npz['cell_gen']
+
+            # If needed limit the number of samples
+            n_gen = min(len(latent_gen), args.num_samples)
+            latent_sub = latent_gen[:n_gen]
+
+            with torch.no_grad():
+                t_in = torch.tensor(latent_sub, dtype=torch.float32).to(device)
+                decoded_gen = vae(t_in, return_decoded=True).cpu().numpy()
+        else:
+            raise FileNotFoundError("No .npz file found for requested data.")
+
+        # Creating final dataset
+        X_final = np.concatenate([real_background, real_target, decoded_gen], axis=0)
+
+        labels = (['Background'] * len(real_background) +
+                  ['Real Class 0'] * len(real_target) +
+                  ['Generated'] * len(decoded_gen))
+
+        adata_final = sc.AnnData(X=X_final)
+        adata_final.obs['Condition'] = labels
+
+        adata_final.obs['Condition'] = adata_final.obs['Condition'].astype('category')
+
+        unique_palette = {
+            'Background': '#e0e0e0',
+            'Real Class 0': '#1f77b4',
+            'Generated': '#e377c2'
+        }
+
+        out_name = f"{paths['output_dir']}/UMAP_Unique_Class_{target_class}.png"
+        plot_umap(adata_final,
+                  f"Unique Class Analysis (Class {target_class})", 
+                  out_name,
+                  color_by='Condition',
+                  custom_palette=unique_palette)
+
+        return
     
     # ---------------------------------------------------------
     # MODE 1: GUIDED + SPECIFIC CLUSTERS 
@@ -437,6 +521,7 @@ if __name__ == "__main__":
     
     parser.add_argument('--num_real_load', type=int, default=-1, 
                         help="Total number of real cells to load from disk (-1 for all). Default -1.")
+    parser.add_argument('--unique', action='store_true', help="Use of unique class Sc diffusion samples")
     # Hardcoded paths here to avoid argument issues
     real_paths = {
         'sc': '/work3/s193518/scIsoPred/data/sc_processed_transcripts.h5ad',
