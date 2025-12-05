@@ -35,14 +35,30 @@ except ImportError:
 # 2. METRICS FUNCTIONS
 # ==========================================
 
-def compute_mmd(real_data, gen_data):
-    return MMDLoss.compute_mmd_rbf(real_data, gen_data)
+def compute_mmd(x, y, gamma=1.0):
+    x_kernel = rbf_kernel(x, x, gamma=gamma)
+    y_kernel = rbf_kernel(y, y, gamma=gamma)
+    xy_kernel = rbf_kernel(x, y, gamma=gamma)
+    return x_kernel.mean() + y_kernel.mean() - 2 * xy_kernel.mean()
 
-def compute_wasserstein(real_data, gen_data):
-    return wasserstein(real_data.flatten(), gen_data.flatten())
+def compute_wasserstein(x, y):
+    wd_list = [wasserstein_distance(x[:, i], y[:, i]) for i in range(x.shape[1])]
+    return float(np.mean(wd_list))
 
-def compute_correlations():
-    pass  # A completer
+def compute_correlations(real_data, gen_data):
+    mean_real = np.mean(real_data, axis=0)
+    mean_gen = np.mean(gen_data, axis=0)
+    var_real = np.var(real_data, axis=0)
+    var_gen = np.var(gen_data, axis=0)
+    # Replace NaNs (e.g. zero-variance genes) to avoid crashes
+    mean_real = np.nan_to_num(mean_real)
+    mean_gen = np.nan_to_num(mean_gen)
+    var_real = np.nan_to_num(var_real)
+    var_gen = np.nan_to_num(var_gen)
+    corr_mean, _ = pearsonr(mean_real, mean_gen)
+    corr_var, _ = pearsonr(var_real, var_gen)
+    return float(corr_mean), float(corr_var)
+
 
 # Eventuellement faire les appels aux fonctions de metrics ici
 
@@ -112,24 +128,55 @@ def setup_paths(args):
     return paths
 
 def get_metrics_for_batch(real_data, gen_data, label):
-    """Computes all metrics for a given pair of real and generated data."""
-    # Ensure sizes match by subsampling the larger set
+    """Compute all metrics for a given pair of real and generated matrices."""
     n_samples = min(len(real_data), len(gen_data))
+    if n_samples < 5:
+        return None
+
     idx_real = np.random.choice(len(real_data), n_samples, replace=False)
     idx_gen = np.random.choice(len(gen_data), n_samples, replace=False)
-    real_sub, gen_sub = real_data[idx_real], gen_data[idx_gen]
+    real_sub = real_data[idx_real]
+    gen_sub = gen_data[idx_gen]
 
-    # PCA already done when computing metrics 
-    
-    # Calculate all metrics
-    mmd_val = compute_mmd(real_sub, gen_sub)
-    w_val = compute_wasserstein(real_sub, gen_sub)
+    # PCA on concatenated data, then evaluate metrics in PC space
+    pca = PCA(n_components=min(30, real_sub.shape[1]))
+    combined = np.concatenate([real_sub, gen_sub], axis=0)
+    pca.fit(combined)
+    real_pca = pca.transform(real_sub)
+    gen_pca = pca.transform(gen_sub)
+
+    mmd_val = compute_mmd(real_pca, gen_pca)
+    w_val = compute_wasserstein(real_pca, gen_pca)
     corr_mean, corr_var = compute_correlations(real_sub, gen_sub)
-    
+
     return {
-        "Condition": label, "MMD": mmd_val, "Wasserstein": w_val,
-        "Corr_Mean": corr_mean, "Corr_Var": corr_var, "N_Samples": n_samples
+        "Condition": label,
+        "MMD": mmd_val,
+        "Wasserstein": w_val,
+        "Corr_Mean": corr_mean,
+        "Corr_Var": corr_var,
+        "N_Samples": int(n_samples),
     }
+
+# def get_metrics_for_batch(real_data, gen_data, label):
+#     """Computes all metrics for a given pair of real and generated data."""
+#     # Ensure sizes match by subsampling the larger set
+#     n_samples = min(len(real_data), len(gen_data))
+#     idx_real = np.random.choice(len(real_data), n_samples, replace=False)
+#     idx_gen = np.random.choice(len(gen_data), n_samples, replace=False)
+#     real_sub, gen_sub = real_data[idx_real], gen_data[idx_gen]
+
+#     # PCA already done when computing metrics 
+    
+#     # Calculate all metrics
+#     mmd_val = compute_mmd(real_sub, gen_sub)
+#     w_val = compute_wasserstein(real_sub, gen_sub)
+#     corr_mean, corr_var = compute_correlations(real_sub, gen_sub)
+    
+#     return {
+#         "Condition": label, "MMD": mmd_val, "Wasserstein": w_val,
+#         "Corr_Mean": corr_mean, "Corr_Var": corr_var, "N_Samples": n_samples
+#     }
 
 def load_real_data(path, num_samples=5000):
     print(f"Loading real data from {path}...")
@@ -170,6 +217,9 @@ def run_metrics(args, paths):
     vae.eval()
     print("VAE loaded.")
 
+    # Max real per cluster; if k is None, default to num_samples
+    max_real_per_cluster = args.k if args.k is not None else args.num_samples
+
     # C. Process Generated Data Files
     if not args.guided:
         # Non-Guided: Single global comparison
@@ -177,10 +227,17 @@ def run_metrics(args, paths):
         if os.path.exists(file_path):
             print("Processing Global Non-Guided...")
             latent_gen = np.load(file_path)['cell_gen']
+
+            # Limit generated samples globally by num_samples (if provided)
+            n_gen = min(len(latent_gen), args.num_samples)
+            idx_gen = np.random.choice(len(latent_gen), n_gen, replace=False)
+            latent_sub = latent_gen[idx_gen]
+
             with torch.no_grad():
-                decoded_gen = vae(torch.tensor(latent_gen, dtype=torch.float32).to(device), return_decoded=True).cpu().numpy()
+                decoded_gen = vae(torch.tensor(latent_sub, dtype=torch.float32).to(device), return_decoded=True).cpu().numpy()
+
             res = get_metrics_for_batch(real_tensor, decoded_gen, "Global")
-            if res: 
+            if res is not None: 
                 results_list.append(res)
 
     else:
@@ -190,29 +247,57 @@ def run_metrics(args, paths):
 
         # --- 1. Global Guided Metric Calculation ---
         print("\nAggregating data for 'Global Guided' metric...")
-        all_latent_gen, all_real_target = [], []
+        all_real, all_gen = [], []
         
         for fpath in files:
             cluster_id = os.path.basename(fpath).split('leiden')[-1].replace('.npz', '')
-            if 'leiden' not in adata_real.obs or sum(adata_real.obs['leiden'] == cluster_id) < 5:
+            if 'leiden' not in adata_real.obs:
+                print("Column 'leiden' not found in real data; cannot condition by cluster.")
+                break
+
+            mask = adata_real.obs['leiden'] == cluster_id
+            if mask.sum() == 0:
                 continue
 
-            latent_gen = np.load(fpath)['cell_gen']
-            real_cluster_data = real_tensor[adata_real.obs['leiden'] == cluster_id]
-            
-            n_samples = min(len(latent_gen), len(real_cluster_data))
-            all_latent_gen.append(latent_gen[np.random.choice(len(latent_gen), n_samples, replace=False)])
-            all_real_target.append(real_cluster_data[np.random.choice(len(real_cluster_data), n_samples, replace=False)])
+            real_cluster = real_tensor[mask]
+            if len(real_cluster) == 0:
+                continue
 
-        if all_latent_gen:
-            final_latent_gen = np.concatenate(all_latent_gen, axis=0)
-            final_real_target = np.concatenate(all_real_target, axis=0)
-            
+            npz = np.load(fpath)
+            latent_gen = npz['cell_gen']
+
+            # Limit generated samples per cluster
+            n_gen = min(len(latent_gen), args.num_samples)
+            if n_gen < 1:
+                continue
+            idx_gen = np.random.choice(len(latent_gen), n_gen, replace=False)
+            latent_sub = latent_gen[idx_gen]
+
+            # Limit real samples per cluster
+            n_real = min(len(real_cluster), max_real_per_cluster)
+            if n_real < 1:
+                continue
+            idx_real = np.random.choice(len(real_cluster), n_real, replace=False)
+            real_sub = real_cluster[idx_real]
+
             with torch.no_grad():
-                decoded_global = vae(torch.tensor(final_latent_gen, dtype=torch.float32).to(device), return_decoded=True).cpu().numpy()
-            
-            res = get_metrics_for_batch(final_real_target, decoded_global, "Guided_Global")
-            if res: results_list.append(res)
+                decoded_sub = vae(
+                    torch.tensor(latent_sub, dtype=torch.float32).to(device),
+                    return_decoded=True
+                ).cpu().numpy()
+
+            all_real.append(real_sub)
+            all_gen.append(decoded_sub)
+
+        if all_real and all_gen:
+            real_global = np.concatenate(all_real, axis=0)
+            gen_global = np.concatenate(all_gen, axis=0)
+            res = get_metrics_for_batch(real_global, gen_global, "Guided_Global")
+            if res is not None:
+                results_list.append(res)
+        else:
+            print("No valid clusters found for Guided_Global metrics.")
+
 
         # --- 2. Per-Cluster Metrics (Optional) ---
         if args.per_cluster:
@@ -221,15 +306,39 @@ def run_metrics(args, paths):
                 cluster_id = os.path.basename(fpath).split('leiden')[-1].replace('.npz', '')
                 print(f"--> Cluster {cluster_id}")
                 
-                latent_gen = np.load(fpath)['cell_gen']
+                mask = adata_real.obs['leiden'] == cluster_id
+                if mask.sum() == 0:
+                    continue
+                real_cluster = real_tensor[mask]
+                if len(real_cluster) < 5:
+                    continue
+
+                npz = np.load(fpath)
+                latent_gen = npz['cell_gen']
+
+                # Limit generated samples per cluster
+                n_gen = min(len(latent_gen), args.num_samples)
+                if n_gen < 5:
+                    continue
+                idx_gen = np.random.choice(len(latent_gen), n_gen, replace=False)
+                latent_sub = latent_gen[idx_gen]
+
+                # Limit real samples per cluster by k/num_samples
+                n_real = min(len(real_cluster), max_real_per_cluster)
+                if n_real < 5:
+                    continue
+                idx_real = np.random.choice(len(real_cluster), n_real, replace=False)
+                real_sub = real_cluster[idx_real]
+
                 with torch.no_grad():
-                    decoded_cluster = vae(torch.tensor(latent_gen, dtype=torch.float32).to(device), return_decoded=True).cpu().numpy()
-                
-                real_cluster_data = real_tensor[adata_real.obs['leiden'] == cluster_id]
-                if len(real_cluster_data) < 5: continue
-                
-                res = get_metrics_for_batch(real_cluster_data, decoded_cluster, f"Cluster_{cluster_id}")
-                if res: 
+                    decoded_cluster = vae(
+                        torch.tensor(latent_sub, dtype=torch.float32).to(device),
+                        return_decoded=True
+                    ).cpu().numpy()
+
+                label = f"Cluster_{cluster_id}"
+                res = get_metrics_for_batch(real_sub, decoded_cluster, label)
+                if res is not None:
                     results_list.append(res)
 
     # D. Save Metrics Results
@@ -248,6 +357,8 @@ if __name__ == "__main__":
     parser.add_argument('--guided', action='store_true', help='Whether to use guided generation')
     parser.add_argument('--transfer', action='store_true', help='Whether transfer learning was used')
     parser.add_argument('--per_cluster', action='store_true', help="In guided mode, also calculate metrics for each cluster individually.")
+    parser.add_argument('--k', type=int, default=None, help="Max number of real samples per cluster in guided mode; defaults to num_samples if not set.")
+    parser.add_argument('--num_real', type=int, default=5000, help="Number of real cells to load from the .h5ad file (global cap).")
     # A completer: autres arguments nécessaires
 
     # Hardcoded paths here to avoid argument issues
