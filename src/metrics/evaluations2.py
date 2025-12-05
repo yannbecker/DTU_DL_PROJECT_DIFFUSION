@@ -123,67 +123,84 @@ def compute_correlations():
     pass
 
 def compute_random_forest(
-        
-        original : np.ndarray, 
-        generated : np.ndarray, 
-        output_path : str,
-        figure_name : str,
-        n_estimators = 1000, 
-        max_depth= 5,      
-        oob_score=True,
-        class_weight = "balanced",
-        random_state=1):
+        original: np.ndarray, 
+        generated: np.ndarray, 
+        output_path: str,
+        figure_name: str,
+        n_estimators: int = 1000, 
+        max_depth: int = 5,       
+        oob_score: bool = True,
+        class_weight: str = "balanced",
+        random_state: int = 1):
+    # Combine original and generated data
+    data = np.concatenate((original, generated), axis=0)
+    label = np.concatenate((np.ones(original.shape[0]), np.zeros(generated.shape[0])))
     
-    """Computes Random Forest classification metrics between original and generated data.
-     Returns a dictionary with training accuracy, validation accuracy, AUC, OOB score, FPR and TPR and plots the ROC curve."""
-    full_data = np.concatenate((original, generated),axis=0)
-    full_data = ad.AnnData(full_data, dtype=np.float32)
-    adata = full_data
-    full_data.obs_names = [f"true_Cell" for i in range(original.shape[0])]+[f"gen_Cell" for i in range(generated.shape[0])]
-    sc.tl.pca(adata, svd_solver='arpack') # svd_solver 
-    real = adata[adata.obs_names=='true_Cell'].obsm['X_pca']
-    sim = adata[adata.obs_names=='gen_Cell'].obsm['X_pca']
+    # Split into training and validation sets
+    X_train, X_val, y_train, y_val = train_test_split(
+        data, label,
+        test_size=0.25,
+        random_state=random_state,
+        stratify=label
+    )
+    # Initialize and train Random Forest Classifier
+    rfc1 = RandomForestClassifier(
+        n_estimators=n_estimators, 
+        max_depth=max_depth,
+        oob_score=oob_score,
+        class_weight=class_weight,
+        random_state=random_state
+    )
+    # Create output directory if it doesn't exist
+    if not os.path.exists(output_path):
+        os.makedirs(output_path)
 
-    data = np.concatenate((real,sim),axis=0)
-    label = np.concatenate((np.ones((real.shape[0])),np.zeros((sim.shape[0]))))
+    # Fit the model
+    rfc1.fit(X_train, y_train)
 
-    X_train,X_val,y_train,y_val = train_test_split(data, label,
-    test_size = 0.25,random_state = 1)
-
-    rfc1 = RandomForestClassifier(n_estimators = n_estimators, 
-                              max_depth= max_depth,      
-                              oob_score= oob_score,
-                              class_weight = class_weight,
-                              random_state=random_state)
-    rfc1.fit(X_train,y_train)
-    ## accuracy
     rfc1_lab = rfc1.predict(X_train)
     rfc1_pre = rfc1.predict(X_val)
-    print("OOB score of random forest:",rfc1.oob_score_)
-    train_acc = accuracy_score(y_train,rfc1_lab)
-    val_acc = accuracy_score(y_val,rfc1_pre)
-    print("accuracy in training set:",train_acc)
-    print("accuracy in validation set:",val_acc)
+    
+    if oob_score:
+        print("OOB score of random forest:", rfc1.oob_score_)
+    
+    # Calculate accuracies
+    train_acc = accuracy_score(y_train, rfc1_lab)
+    val_acc = accuracy_score(y_val, rfc1_pre)
+    print("Accuracy in training set:", train_acc)
+    print("Accuracy in validation set:", val_acc)
+    
+    # Predict probabilities for validation set
     pre_y = rfc1.predict_proba(X_val)[:, 1]
+    
+    # Compute ROC curve and AUC
     fpr_Nb, tpr_Nb, _ = roc_curve(y_val, pre_y)
-    aucval = auc(fpr_Nb, tpr_Nb)   #Area Under Curve 
-    plt.figure(figsize=(10,8))
-    plt.plot([0, 1], [0, 1], 'k--')
-    plt.plot(fpr_Nb, tpr_Nb,"r",linewidth = 3)
-    plt.grid()
-    plt.xlabel("FPR")
-    plt.ylabel("TPR")
+    aucval = auc(fpr_Nb, tpr_Nb)
+    print(f"AUC value: {aucval:.4f}")
+    
+    plt.figure(figsize=(10, 8))
+    plt.plot([0, 1], [0, 1], 'k--', label='Chance (AUC = 0.5)')
+    plt.plot(fpr_Nb, tpr_Nb, "r", linewidth=3, label=f'Random Forest (AUC = {aucval:.4f})')
+    
+    plt.grid(True)
+    plt.xlabel("False Positive Rate (FPR)")
+    plt.ylabel("True Positive Rate (TPR)")
     plt.xlim(0, 1)
     plt.ylim(0, 1)
-    plt.title("ROC curve of random forest")
-    plt.text(0.15,0.9,"AUC = "+str(round(aucval,4)))
+    plt.title("ROC Curve of Random Forest: Distinguishing Original vs. Generated Data")
+    plt.legend(loc="lower right")
+    
     plt.savefig(os.path.join(output_path, figure_name))
-    return {"train accuracy": train_acc, 
-            "validation accuracy": val_acc, 
-            "auc": aucval, 
-            "oob_score": rfc1.oob_score_, 
-            "False Positive Rate": fpr_Nb, 
-            "True Positive Rate": tpr_Nb}
+    plt.close()
+    
+    return {
+        "train accuracy": train_acc, 
+        "validation accuracy": val_acc, 
+        "auc": aucval, 
+        "oob_score": rfc1.oob_score_ if oob_score else None, 
+        "False Positive Rate": fpr_Nb.tolist(),
+        "True Positive Rate": tpr_Nb.tolist()
+    }
 
 
 
