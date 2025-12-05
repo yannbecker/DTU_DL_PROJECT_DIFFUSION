@@ -96,11 +96,11 @@ def setup_paths(args):
 
     return paths
 
-def load_real_data(path, num_samples=20000):
+def load_real_data(path, num_samples=20000): 
     """
     Loads real data. 
     If num_samples is -1, loads all data.
-    Otherwise, loads the first num_samples.
+    Otherwise, randomly samples num_samples cells (shuffled).
     """
     print(f"Loading real data from {path}...")
     
@@ -112,11 +112,14 @@ def load_real_data(path, num_samples=20000):
         print(f"--> Loading ALL {adata_real.n_obs} cells.")
         adata_subset = adata_real.to_memory()
     else:
-        print(f"--> Loading first {num_samples} cells out of {adata_real.n_obs}.")
-        # WARNING: This takes the first N cells. If your data is sorted by cluster,
-        # you might miss specific clusters. Ideally, shuffle the .h5ad beforehand
-        # or use random indices here if memory allows.
-        adata_subset = adata_real[:num_samples].to_memory()
+        print(f"--> Randomly sampling {num_samples} cells out of {adata_real.n_obs}.")
+        # Generate random indices for sampling
+        np.random.seed(42)  # Set seed for reproducibility
+        random_indices = np.random.choice(adata_real.n_obs, num_samples, replace=False)
+        random_indices = np.sort(random_indices)  # Sort for efficient h5ad access
+        
+        # Load only the randomly selected cells
+        adata_subset = adata_real[random_indices].to_memory()
 
     adata_subset.var_names_make_unique()
     
