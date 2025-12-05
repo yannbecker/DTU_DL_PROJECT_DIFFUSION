@@ -7,6 +7,8 @@ import argparse
 import numpy as np
 import scanpy as sc
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
 import torch
 import glob
 
@@ -172,6 +174,89 @@ def plot_umap(adata_combined, title, filename, color_by='Condition'):
     plt.close()
     print(f"Saved as: {filename}")
 
+def plot_umap_custom(adata_combined, title, filename, color_by='leiden'):
+    """
+    Generates a custom UMAP plot where 'Real' samples are squares
+    with black borders, and all samples are colored by a categorical variable.
+    """
+    print(f"Generating custom plot: {title} (Color by: {color_by})")
+
+    # --- Standard Scanpy Pipeline ---
+    sc.pp.highly_variable_genes(adata_combined, min_mean=0.0125, max_mean=3, min_disp=0.5)
+    adata_combined = adata_combined[:, adata_combined.var.highly_variable]
+    sc.pp.scale(adata_combined)
+    sc.tl.pca(adata_combined, svd_solver='arpack')
+    sc.pp.neighbors(adata_combined, n_neighbors=15, n_pcs=30)
+    sc.tl.umap(adata_combined)
+
+    # --- Custom Matplotlib Plotting ---
+    fig, ax = plt.subplots(figsize=(8, 7))
+
+    # Ensure the categorical observation has colors assigned in .uns
+    if f'{color_by}_colors' not in adata_combined.uns:
+        sc.pl._utils.add_colors_for_categorical_sample_annotation(adata_combined, color_by)
+    
+    # Create a mapping from cluster label to color
+    cluster_to_color = dict(zip(adata_combined.obs[color_by].cat.categories, adata_combined.uns[f'{color_by}_colors']))
+    
+    # Separate data for plotting
+    real_mask = adata_combined.obs['Condition'] == 'Real'
+    gen_mask = adata_combined.obs['Condition'] == 'Generated'
+
+    # 1. Plot Generated data (circles, colored by cluster)
+    adata_gen = adata_combined[gen_mask, :]
+    colors_gen = adata_gen.obs[color_by].map(cluster_to_color)
+    ax.scatter(
+        adata_gen.obsm['X_umap'][:, 0],
+        adata_gen.obsm['X_umap'][:, 1],
+        c=colors_gen.values,
+        marker='o',
+        alpha=0.7,
+        s=25,
+        label='Generated'
+    )
+
+    # 2. Plot Real data (squares with black border, colored by cluster)
+    adata_real = adata_combined[real_mask, :]
+    colors_real = adata_real.obs[color_by].map(cluster_to_color)
+    ax.scatter(
+        adata_real.obsm['X_umap'][:, 0],
+        adata_real.obsm['X_umap'][:, 1],
+        c=colors_real.values,
+        marker='s',
+        alpha=0.9,
+        s=30,
+        edgecolor='black',
+        linewidth=0.7,
+        label='Real'
+    )
+
+    # --- Aesthetics and Legend ---
+    ax.set_title(title, fontweight='bold')
+    ax.set_xlabel('UMAP 1')
+    ax.set_ylabel('UMAP 2')
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.tick_params(axis='both', which='both', bottom=False, top=False, left=False, right=False, labelbottom=False, labelleft=False)
+
+    # Create separate legends for shapes and colors
+    shape_legend = ax.legend(handles=[
+        Line2D([0], [0], marker='s', color='w', label='Real', markersize=8, markerfacecolor='grey', markeredgecolor='black'),
+        Line2D([0], [0], marker='o', color='w', label='Generated', markersize=8, markerfacecolor='grey')
+    ], title='Condition', loc='upper left', bbox_to_anchor=(1.02, 1))
+    ax.add_artist(shape_legend)
+
+    color_legend = ax.legend(handles=[Patch(facecolor=color, label=cluster) for cluster, color in cluster_to_color.items()],
+                             title=color_by.capitalize(), loc='lower left', bbox_to_anchor=(1.02, 0))
+
+    # --- Save Figure ---
+    plt.savefig(filename, bbox_inches='tight', dpi=300)
+    plt.close()
+    print(f"Saved as: {filename}")
+
+
 # ==========================================
 # 3. MAIN LOGIC
 # ==========================================
@@ -263,8 +348,7 @@ def run_visualization(args, paths):
             ]
             
             out_name = f"{paths['output_dir']}/UMAP_Combined_Clusters_{'_'.join(target_clusters)}.png"
-            plot_umap(adata_final, f"Combined Clusters ({args.mode.upper()})", 
-                    out_name, color_by='Cluster_Condition')
+            plot_umap_custom(adata_final, f"Combined Clusters ({args.mode.upper()})", out_name, color_by='leiden')
 
 
     # ---------------------------------------------------------
