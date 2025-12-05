@@ -23,6 +23,8 @@ weights/
 *.out
 *.err
 
+*.zip
+
 # Distribution / packaging
 .Python
 build/
