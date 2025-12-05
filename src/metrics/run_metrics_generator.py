@@ -75,46 +75,32 @@ def get_device():
         return 'cpu'
     
 def setup_paths(args):
-    """Dynamically constructs paths using f-strings."""
-    
-    # 1. Choose DATA folder
-    if args.mode == 'sc':
-        if args.transfer:
-            data_folder = "sc_transfer"
-        else:
-            data_folder = "sc"
-    else:
-        # Bulk mode (usually no transfer, but keeping logic clean)
-        data_folder = "bulk"
-    
-    # 2. Choose sub-folder (guided/non_guided)
-    if args.guided:
-        sub_folder = "guided"
-    else:
-        sub_folder = "non_guided"
-
-    # 3. Choose VAE suffix (sc or bulk)
-    # The VAE depends on data modality, not transfer learning
+    """Constructs paths using the same architecture as UMAP script."""
+    data_folder = "sc_transfer" if args.mode == "sc" and args.transfer else args.mode
+    sub_folder = "guided" if args.guided else "non_guided"
     vae_mode = "sc" if args.mode == "sc" else "bulk"
 
-    # 4. Construct full paths with f-strings
-    data_root = f"{HPC_ROOT}/data/{data_folder}"
-    input_dir = f"{data_root}/{sub_folder}"
+    input_dir = f"{HPC_ROOT}/data/{data_folder}/{sub_folder}"
     weights_path = f"{HPC_ROOT}/weights/model_vae_{vae_mode}.pt"
     real_data_path = args.real_data_paths[args.mode]
-    
-    output_folder_name = f"umap_{data_folder}_{sub_folder}"
-    output_dir = f"{HPC_ROOT}/output/{output_folder_name}"
+    output_dir = f"{HPC_ROOT}/output/metrics"
+    csv_name = f"metrics_{data_folder}_{sub_folder}.csv"
 
-    # Create output directory
     os.makedirs(output_dir, exist_ok=True)
 
-    paths = {
-        "data_root": data_folder,
+    if not os.path.exists(input_dir):
+        raise FileNotFoundError(f"Input directory not found: {input_dir}")
+    if not os.path.exists(weights_path):
+        raise FileNotFoundError(f"Weights file not found: {weights_path}")
+    if not os.path.exists(real_data_path):
+        raise FileNotFoundError(f"Real data file not found: {real_data_path}")
+
+    return {
         "input_dir": input_dir,
         "weights_path": weights_path,
         "real_data_path": real_data_path,
-        "output_dir": output_dir
+        "output_dir": output_dir,
+        "csv_name": csv_name,
     }
 
     # Basic checks
