@@ -356,9 +356,13 @@ if __name__ == "__main__":
     parser.add_argument('--mode', type=str, choices=['sc', 'bulk'], required=True, help='Data modality: sc or bulk')
     parser.add_argument('--guided', action='store_true', help='Whether to use guided generation')
     parser.add_argument('--transfer', action='store_true', help='Whether transfer learning was used')
-    parser.add_argument('--per_cluster', action='store_true', help="In guided mode, also calculate metrics for each cluster individually.")
-    parser.add_argument('--k', type=int, default=None, help="Max number of real samples per cluster in guided mode; defaults to num_samples if not set.")
-    parser.add_argument('--num_real', type=int, default=5000, help="Number of real cells to load from the .h5ad file (global cap).")
+    parser.add_argument('--num_samples', type=int, default=1000,
+                        help="Max number of generated samples per cluster (or globally in non-guided).")
+    parser.add_argument('--k', type=int, default=None,
+                        help="Max number of real samples per cluster in guided mode; "
+                             "defaults to num_samples if not set.")
+    parser.add_argument('--num_real', type=int, default=5000,
+                        help="Number of real cells to load from the .h5ad file (global cap).")
     # A completer: autres arguments nécessaires
 
     # Hardcoded paths here to avoid argument issues
