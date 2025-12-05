@@ -25,7 +25,7 @@ sys.path.append(HPC_ROOT)
 
 try:
     from src.VAE.VAE_model import VAE
-    from evaluations2 import MMDLoss, wasserstein, GaussianKLDivergence
+    from src.metrics.evaluations2 import MMDLoss, wasserstein, GaussianKLDivergence
 
 except ImportError:
     print(f"Error: Unable to import VAE_model from path: {HPC_ROOT}")
@@ -35,11 +35,11 @@ except ImportError:
 # 2. METRICS FUNCTIONS
 # ==========================================
 
-def compute_mmd():
-    pass  # A completer
+def compute_mmd(real_data, gen_data):
+    return MMDLoss.compute_mmd_rbf(real_data, gen_data)
 
-def compute_wasserstein():
-    pass  # A completer
+def compute_wasserstein(real_data, gen_data):
+    return wasserstein(real_data.flatten(), gen_data.flatten())
 
 def compute_correlations():
     pass  # A completer
