@@ -1,5 +1,5 @@
 import os
-from turtle import st
+# from turtle import st
 
 # from src.utils.fp16_util import state_dict_to_master_params
 # Force CUDA device 0
@@ -25,7 +25,7 @@ sys.path.append(HPC_ROOT)
 
 try:
     from src.VAE.VAE_model import VAE
-    from src.metrics.evaluations2 import MMDLoss, wasserstein, GaussianKLDivergence
+    # from src.metrics.evaluations2 import MMDLoss, wasserstein, GaussianKLDivergence
 
 except ImportError:
     print(f"Error: Unable to import VAE_model from path: {HPC_ROOT}")
