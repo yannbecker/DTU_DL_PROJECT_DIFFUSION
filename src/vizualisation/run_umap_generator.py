@@ -190,7 +190,7 @@ def plot_umap_custom(adata_combined, title, filename, color_by='leiden'):
     sc.tl.umap(adata_combined)
 
     # --- Custom Matplotlib Plotting ---
-    fig, ax = plt.subplots(figsize=(8, 7))
+    fig, ax = plt.subplots(figsize=(11, 7))
 
     # Ensure the categorical observation has colors assigned in .uns
     if f'{color_by}_colors' not in adata_combined.uns:
