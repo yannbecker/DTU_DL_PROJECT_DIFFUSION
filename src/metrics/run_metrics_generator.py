@@ -119,15 +119,11 @@ def get_metrics_for_batch(real_data, gen_data, label):
     idx_gen = np.random.choice(len(gen_data), n_samples, replace=False)
     real_sub, gen_sub = real_data[idx_real], gen_data[idx_gen]
 
-    # PCA for distribution metrics (MMD, Wasserstein)
-    pca = PCA(n_components=30)
-    combined = np.concatenate([real_sub, gen_sub], axis=0)
-    pca.fit(combined)
-    real_pca, gen_pca = pca.transform(real_sub), pca.transform(gen_sub)
-
+    # PCA already done when computing metrics 
+    
     # Calculate all metrics
-    mmd_val = compute_mmd(real_pca, gen_pca)
-    w_val = compute_wasserstein(real_pca, gen_pca)
+    mmd_val = compute_mmd(real_sub, gen_sub)
+    w_val = compute_wasserstein(real_sub, gen_sub)
     corr_mean, corr_var = compute_correlations(real_sub, gen_sub)
     
     return {
@@ -158,6 +154,7 @@ def load_real_data(path, num_samples=5000):
 def run_metrics(args, paths):
     device = get_device()
     print(f"Device: {device}")
+    results_list = []
 
     # A. Load Real Data
     adata_real, real_tensor = load_real_data(paths["real_data_path"], num_samples=5000) # num_samples to put as arg parse later
@@ -174,8 +171,66 @@ def run_metrics(args, paths):
     print("VAE loaded.")
 
     # C. Process Generated Data Files
-    ...  # A completer
-    results_list = []
+    if not args.guided:
+        # Non-Guided: Single global comparison
+        file_path = f"{paths['input_dir']}/{args.mode}_250000.npz"
+        if os.path.exists(file_path):
+            print("Processing Global Non-Guided...")
+            latent_gen = np.load(file_path)['cell_gen']
+            with torch.no_grad():
+                decoded_gen = vae(torch.tensor(latent_gen, dtype=torch.float32).to(device), return_decoded=True).cpu().numpy()
+            res = get_metrics_for_batch(real_tensor, decoded_gen, "Global")
+            if res: 
+                results_list.append(res)
+
+    else:
+        # Guided Mode
+        files = sorted(glob.glob(f"{paths['input_dir']}/{args.mode}_250000_leiden*.npz"))
+        print(f"Guided mode: {len(files)} cluster files found.")
+
+        # --- 1. Global Guided Metric Calculation ---
+        print("\nAggregating data for 'Global Guided' metric...")
+        all_latent_gen, all_real_target = [], []
+        
+        for fpath in files:
+            cluster_id = os.path.basename(fpath).split('leiden')[-1].replace('.npz', '')
+            if 'leiden' not in adata_real.obs or sum(adata_real.obs['leiden'] == cluster_id) < 5:
+                continue
+
+            latent_gen = np.load(fpath)['cell_gen']
+            real_cluster_data = real_tensor[adata_real.obs['leiden'] == cluster_id]
+            
+            n_samples = min(len(latent_gen), len(real_cluster_data))
+            all_latent_gen.append(latent_gen[np.random.choice(len(latent_gen), n_samples, replace=False)])
+            all_real_target.append(real_cluster_data[np.random.choice(len(real_cluster_data), n_samples, replace=False)])
+
+        if all_latent_gen:
+            final_latent_gen = np.concatenate(all_latent_gen, axis=0)
+            final_real_target = np.concatenate(all_real_target, axis=0)
+            
+            with torch.no_grad():
+                decoded_global = vae(torch.tensor(final_latent_gen, dtype=torch.float32).to(device), return_decoded=True).cpu().numpy()
+            
+            res = get_metrics_for_batch(final_real_target, decoded_global, "Guided_Global")
+            if res: results_list.append(res)
+
+        # --- 2. Per-Cluster Metrics (Optional) ---
+        if args.per_cluster:
+            print("\nCalculating per-cluster metrics...")
+            for fpath in files:
+                cluster_id = os.path.basename(fpath).split('leiden')[-1].replace('.npz', '')
+                print(f"--> Cluster {cluster_id}")
+                
+                latent_gen = np.load(fpath)['cell_gen']
+                with torch.no_grad():
+                    decoded_cluster = vae(torch.tensor(latent_gen, dtype=torch.float32).to(device), return_decoded=True).cpu().numpy()
+                
+                real_cluster_data = real_tensor[adata_real.obs['leiden'] == cluster_id]
+                if len(real_cluster_data) < 5: continue
+                
+                res = get_metrics_for_batch(real_cluster_data, decoded_cluster, f"Cluster_{cluster_id}")
+                if res: 
+                    results_list.append(res)
 
     # D. Save Metrics Results
     if results_list:
@@ -192,6 +247,7 @@ if __name__ == "__main__":
     parser.add_argument('--mode', type=str, choices=['sc', 'bulk'], required=True, help='Data modality: sc or bulk')
     parser.add_argument('--guided', action='store_true', help='Whether to use guided generation')
     parser.add_argument('--transfer', action='store_true', help='Whether transfer learning was used')
+    parser.add_argument('--per_cluster', action='store_true', help="In guided mode, also calculate metrics for each cluster individually.")
     # A completer: autres arguments nécessaires
 
     # Hardcoded paths here to avoid argument issues
