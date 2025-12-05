@@ -4,18 +4,17 @@ from pathlib import Path
 # === CONFIGURATION ===
 url = "https://zenodo.org/record/8286452/files/annotation_model_v1.tar.gz?download=1"
 
-output_path = Path("annotation_model_v1.tar.gz")  # fichier local
+output_path = Path("annotation_model_v1.tar.gz")  # Local file
 
-chunk_size = 1024 * 1024  # 1 MB par chunk
+chunk_size = 1024 * 1024  # 1 MB each chunk
 
-# === Reprendre si fichier existant ===
+
 resume_byte_pos = 0
 if output_path.exists():
     resume_byte_pos = output_path.stat().st_size
 
 headers = {"Range": f"bytes={resume_byte_pos}-"} if resume_byte_pos > 0 else {}
 
-# Obtenir la taille totale pour afficher progression
 response_head = requests.head(url, allow_redirects=True)
 total_size = int(response_head.headers.get('Content-Length', 0))
 if resume_byte_pos > 0:

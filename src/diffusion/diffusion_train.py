@@ -86,8 +86,8 @@ def create_argparser():
         vae_path = '/zhome/70/a/224464/DL_project17/DTU_DL_PROJECT_DIFFUSION/src/VAE/output/ae_checkpoint/vae_bulk_transcript_pca/model_seed=0_step=1999.pt',
         model_name="bulk_diffusion",
         save_dir='output/diffusion_checkpoint',
-        # class_cond=True,  # /!\ à adapter si on veut intégrer le conditionnement au training
-        # num_class=5,      # à adapter au nombre de classes trouvées pour la condition_key
+        # class_cond=True,  # /!\ To add if we want a condition
+        # num_class=5,      # To adapt to the number of classes found for the condition key 
     )
     defaults.update(model_and_diffusion_defaults())
     parser = argparse.ArgumentParser()

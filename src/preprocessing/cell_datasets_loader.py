@@ -20,19 +20,6 @@ def stabilize(expression_matrix):
     phi_hat, _ = optimize.curve_fit(lambda mu, phi: mu + phi * mu ** 2, expression_matrix.mean(1), expression_matrix.var(1))
     return np.log(expression_matrix + 1. / (2 * phi_hat[0]))
 
-# def load_VAE(vae_path, num_gene, hidden_dim):
-#     autoencoder = VAE(
-#         num_genes=num_gene,
-#         device='cuda',
-#         seed=0,
-#         loss_ae='mse',
-#         hidden_dim=hidden_dim,
-#         decoder_activation='ReLU',
-#     )
-#     # Mapping location to cpu/cuda handled by torch.load generally, but rigorous mapping helps
-#     autoencoder.load_state_dict(torch.load(vae_path, map_location=torch.device('cpu'))
-#     return autoencoder
-
 def load_VAE(vae_path, num_gene, hidden_dim): # Like the tmp_dataset_loader.py version
     autoencoder = VAE(
         num_genes=num_gene,
@@ -45,39 +32,6 @@ def load_VAE(vae_path, num_gene, hidden_dim): # Like the tmp_dataset_loader.py v
     # Mapping location to cpu/cuda handled by torch.load generally, but rigorous mapping helps
     autoencoder.load_state_dict(torch.load(vae_path, map_location=torch.device('cuda')))
     return autoencoder
-
-# def load_VAE(vae_path, num_gene, hidden_dim):
-#     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    
-#     autoencoder = VAE(
-#         num_genes=num_gene,
-#         device=device,
-#         seed=0,
-#         loss_ae='mse',
-#         hidden_dim=hidden_dim,
-#         decoder_activation='ReLU',
-#     )
-    
-#     print(f"Loading weights from {vae_path} to CPU first...")
-#     try:
-#         # Chargement sécurisé sur CPU
-#         with open(vae_path, 'rb') as f:
-#             print("Reading weight file...")
-#             state_dict = torch.load(f, map_location=torch.device('cpu'))
-#             print("Weights loaded from file, now loading into model...")
-#             autoencoder.load_state_dict(state_dict)
-#             print("Weights loaded successfully.")
-#     except Exception as e:
-#         print(f"CRITICAL ERROR loading weights: {e}")
-#         # Optionnel: Afficher la taille du fichier pour debug
-#         import os
-#         if os.path.exists(vae_path):
-#             print(f"File size: {os.path.getsize(vae_path)} bytes")
-#         else:
-#             print("File does not exist at this path!")
-#         raise e
-#     autoencoder.to(device)
-#     return autoencoder
 
 def load_data(
     *,
@@ -92,7 +46,7 @@ def load_data(
     plot_pca=True,
     plot_path='output/plots/pca_variance.png',
     save_pca_path='output/data/pca_reduced_data.h5ad',
-    condition_key=None,  # NOUVEAU PARAMÈTRE
+    condition_key=None, 
 ):
     """
     For a dataset, create a generator over (cells, kwargs) pairs.
@@ -105,7 +59,7 @@ def load_data(
 
     adata = ad.read_h5ad(data_dir)
 
-    # 1. Gestion des Labels (Conditionning)
+    # 1. Label management
     labels = None
     num_classes = 0
     print(f"Condition key: {condition_key}")
@@ -113,9 +67,9 @@ def load_data(
         print("Entering condition key related part")
         if condition_key in adata.obs.columns:
             print(f"Loading labels from adata.obs['{condition_key}']...")
-            # Encodage des labels (str -> int)
+            # (str -> int)
             le = LabelEncoder()
-            # On convertit en string pour éviter les erreurs si mix types
+            # Convert to string
             raw_labels = adata.obs[condition_key].astype(str).values 
             labels = le.fit_transform(raw_labels)
             num_classes = len(le.classes_)
@@ -123,15 +77,14 @@ def load_data(
         else:
             raise KeyError(f"La clé '{condition_key}' n'existe pas dans adata.obs. Clés disponibles: {adata.obs.columns.tolist()}")
 
-    # 2. Pré-traitement classique (Normalisation / Log1p)
-    # Note: Si c'est déjà normalisé, scanpy le détectera souvent ou c'est à gérer en amont.
-    # Ici on garde ta logique existante.
+    # 2. Pre-processing classique (Normalization / Log1p)
+
     sc.pp.normalize_total(adata, target_sum=1e4)
     sc.pp.log1p(adata)
     print("Data normalized and log-transformed.")
     
     cell_data = adata.X
-    # Conversion sparse -> dense si nécessaire
+    # Sparse conversion 
     if hasattr(cell_data, "toarray"):
         cell_data = cell_data.toarray()
         
@@ -139,13 +92,13 @@ def load_data(
 
     # 3. PCA
     if use_pca:
-        # Note: run_pca modifie l'adata ou renvoie numpy, assurons-nous de la cohérence
+        # NOT IMPLEMENTED
         cell_data_pca, pca_model = run_pca(adata, 
                                         n_components=None, 
                                         threshold=0.90, 
                                         plot=plot_pca, 
                                         plot_path=plot_path)
-        cell_data = cell_data_pca # On remplace cell_data par la version réduite
+        cell_data = cell_data_pca 
         print(f"PCA reduced data shape: {cell_data.shape}")
         
         if save_pca_path is not None:
@@ -163,7 +116,7 @@ def load_data(
         autoencoder = load_VAE(vae_path, num_gene, hidden_dim)
         autoencoder.eval()
         
-        # Passage par lot pour éviter OOM sur GPU si le dataset est énorme
+        # Batching to avoid memory usage
         batch_size_inference = 512
         latent_list = []
         
@@ -176,10 +129,10 @@ def load_data(
         cell_data = np.concatenate(latent_list, axis=0)
         print(f"VAE Latent shape: {cell_data.shape}")
 
-    # 5. Création du Dataset et Loader
+    # 5. Loader and dataset creation
     dataset = CellDataset(
         cell_data,
-        labels=labels  # On passe les labels encodés ici
+        labels=labels 
     )
     
     if deterministic:
@@ -211,8 +164,6 @@ class CellDataset(Dataset):
         arr = self.data[idx]
         out_dict = {}
         
-        # Si on a des labels, on les ajoute dans le dictionnaire de sortie
-        # La clé "y" est celle attendue par classifier_train.py
         if self.labels is not None:
             out_dict["y"] = np.array(self.labels[idx], dtype=np.int64)
             
@@ -239,7 +190,7 @@ if __name__ == "__main__":
         
         if "y" in extra_dict:
             print(f"Labels shape: {extra_dict['y'].shape}")
-            print(f"Example labels: {extra_dict['y'][:5]}") # Affiche les 5 premiers labels
+            print(f"Example labels: {extra_dict['y'][:5]}") 
         else:
             print("No labels found in output dictionary.")
             

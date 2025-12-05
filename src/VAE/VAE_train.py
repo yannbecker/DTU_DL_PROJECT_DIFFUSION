@@ -8,10 +8,12 @@ import numpy as np
 import torch
 from tqdm import tqdm
 from VAE_model import VAE
+
 import sys
 from pathlib import Path
 sys.path.append(str(Path(__file__).resolve().parents[2]))
 from src.preprocessing.cell_datasets_loader import load_data
+
 from src.preprocessing.PCA import run_pca
 
 torch.autograd.set_detect_anomaly(True)
@@ -158,8 +160,4 @@ def parse_arguments():
 
 if __name__ == "__main__":
     seed_everything(1234)
-    # args = parse_arguments()
-    # autoencoder, datasets = prepare_vae(args)
-    # print('data loaded from ', args["data_dir"])
-    # print('PCA resulting data shape: ', datasets[0][0].shape)
     train_vae(parse_arguments())
