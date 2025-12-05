@@ -3,7 +3,7 @@ from turtle import st
 
 from src.utils.fp16_util import state_dict_to_master_params
 # Force CUDA device 0
-os.environ['CUDA_VISIBLE_DEVICES'] = '0'
+#os.environ['CUDA_VISIBLE_DEVICES'] = '0'
 
 import sys
 import argparse
@@ -20,7 +20,7 @@ from sklearn.decomposition import PCA
 # 1. SETUP (Paths & Imports)
 # ==========================================
 # To adapt to HPC 
-HPC_ROOT = "/zhome/5b/d/223428/DTU_DL_PROJECT_DIFFUSION"
+HPC_ROOT = "/zhome/f0/d/223076/DTU_DL_PROJECT_DIFFUSION"
 sys.path.append(HPC_ROOT)
 
 try:
